@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> Remove this line to confirm you've reviewed this PR before submitting.
+
 # LEC Editor
 
 LEC Editor is a C/C++ editor fork of Zed. It keeps the existing file and folder workflow and aims to bundle compilation, execution, and a small supported library catalog.

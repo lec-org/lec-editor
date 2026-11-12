@@ -1227,9 +1227,10 @@ pub struct DisableAiSettings {
 }
 
 impl settings::Settings for DisableAiSettings {
-    fn from_settings(content: &settings::SettingsContent) -> Self {
+    fn from_settings(_content: &settings::SettingsContent) -> Self {
         Self {
-            disable_ai: content.project.disable_ai.unwrap().0,
+            // This product does not initialize AI services or register their UI.
+            disable_ai: true,
         }
     }
 }

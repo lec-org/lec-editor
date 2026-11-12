@@ -11,6 +11,7 @@ use gpui::{
     DismissEvent, Entity, EventEmitter, FocusHandle, Focusable, ScrollHandle, Task, WeakEntity,
 };
 
+use i18n::t;
 use project::{
     WorktreeId,
     trusted_worktrees::{PathTrust, RemoteHostLocation, TrustedWorktrees},
@@ -88,9 +89,9 @@ impl Render for SecurityModal {
 
         let restricted_count = self.restricted_paths.len();
         let header_label: SharedString = if restricted_count == 1 {
-            "Unrecognized Project".into()
+            t!("Unrecognized Project")
         } else {
-            format!("Unrecognized Projects ({})", restricted_count).into()
+            t!("Unrecognized Projects ({count})", count = restricted_count)
         };
 
         let path_style = self.path_style(cx);
@@ -190,9 +191,9 @@ impl Render for SecurityModal {
                     .child(
                         v_flex()
                             .child(
-                                Label::new(
-                                    "Untrusted projects are opened in Restricted Mode to protect your system.",
-                                )
+                                Label::new(t!(
+                                    "Untrusted projects are opened in Restricted Mode to protect your system."
+                                ))
                                 .color(Color::Muted),
                             )
                             .child(
@@ -204,10 +205,14 @@ impl Render for SecurityModal {
                     )
                     .child(
                         v_flex()
-                            .child(Label::new("Restricted Mode prevents:").color(Color::Muted))
-                            .child(ListBulletItem::new("Project settings from being applied"))
-                            .child(ListBulletItem::new("Language servers from running"))
-                            .child(ListBulletItem::new("MCP Server integrations from installing")),
+                            .child(
+                                Label::new(t!("Restricted Mode prevents:")).color(Color::Muted),
+                            )
+                            .child(ListBulletItem::new(t!("Project settings from being applied")))
+                            .child(ListBulletItem::new(t!("Language servers from running")))
+                            .child(ListBulletItem::new(t!(
+                                "MCP Server integrations from installing"
+                            ))),
                     )
                     .map(|this| {
                         let Some(trust_label) = trust_label else {
@@ -230,7 +235,7 @@ impl Render for SecurityModal {
                                             "trust-parents",
                                             ToggleState::from(self.trust_parents),
                                         )
-                                        .label("Trust all projects in")
+                                        .label(t!("Trust all projects in"))
                                         .on_click(cx.listener(
                                             |security_modal, state: &ToggleState, _, cx| {
                                                 let trust_parents = state.selected();
@@ -277,7 +282,7 @@ impl Render for SecurityModal {
                     .gap_1()
                     .justify_end()
                     .child(
-                        Button::new("rm", "Stay in Restricted Mode")
+                        Button::new("rm", t!("Stay in Restricted Mode"))
                             .key_binding(
                                 KeyBinding::for_action(
                                     &ToggleWorktreeSecurity,
@@ -292,7 +297,7 @@ impl Render for SecurityModal {
                             })),
                     )
                     .child(
-                        Button::new("tc", "Trust and Continue")
+                        Button::new("tc", t!("Trust and Continue"))
                             .style(ButtonStyle::Filled)
                             .layer(ui::ElevationIndex::ModalSurface)
                             .key_binding(
@@ -317,7 +322,7 @@ impl SecurityModal {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Self {
-        let trust_path_input = cx.new(|cx| InputField::new(window, cx, "Folder to trust"));
+        let trust_path_input = cx.new(|cx| InputField::new(window, cx, &t!("Folder to trust")));
         let task = cx.spawn(async |this, cx| {
             let home_dir = home_dir_task.await;
             this.update(cx, |this, cx| {
@@ -358,7 +363,7 @@ impl SecurityModal {
         this
     }
 
-    fn build_trust_label(&self, path_style: PathStyle) -> Option<Cow<'static, str>> {
+    fn build_trust_label(&self, path_style: PathStyle) -> Option<SharedString> {
         let mut has_restricted_files = false;
         let available_parents = self
             .restricted_paths
@@ -372,17 +377,18 @@ impl SecurityModal {
         match available_parents.len() {
             0 => {
                 if has_restricted_files {
-                    Some(Cow::Borrowed("Trust all single files"))
+                    Some(t!("Trust all single files"))
                 } else {
                     None
                 }
             }
-            1 => Some(Cow::Owned(format!(
-                "Trust all projects in the {:} folder",
-                self.shorten_path(available_parents[0], path_style)
+            1 => Some(t!(
+                "Trust all projects in the {folder} folder",
+                folder = self
+                    .shorten_path(available_parents[0], path_style)
                     .display()
-            ))),
-            _ => Some(Cow::Borrowed("Trust all projects in the parent folders")),
+            )),
+            _ => Some(t!("Trust all projects in the parent folders")),
         }
     }
 
@@ -533,7 +539,7 @@ fn validate_trust_scope(
 ) -> Result<PathBuf, SharedString> {
     let trimmed = typed.trim();
     if trimmed.is_empty() {
-        return Err("Enter a folder to trust".into());
+        return Err(t!("Enter a folder to trust"));
     }
     if home_dir.is_none() && trimmed.starts_with('~') {
         return Err("Home directory not available".into());
@@ -549,11 +555,11 @@ fn validate_trust_scope(
         _ => PathBuf::from(trimmed),
     };
     if !path_style.is_absolute(&expanded) {
-        return Err("Enter an absolute folder path".into());
+        return Err(t!("Enter an absolute folder path"));
     }
 
     if !path_style.starts_with(project, expanded.as_path()) {
-        return Err("Must be a parent folder of the project".into());
+        return Err(t!("Must be a parent folder of the project"));
     }
     Ok(expanded)
 }

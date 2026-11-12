@@ -11,6 +11,7 @@ use gpui::{
     ParentElement, Render, Styled, Task, TaskExt, Window, actions,
 };
 use gpui::{WeakEntity, linear_color_stop, linear_gradient};
+use i18n::{n, t};
 use menu::{SelectNext, SelectPrevious};
 
 use schemars::JsonSchema;
@@ -153,7 +154,7 @@ impl SectionEntry {
     fn render(&self, button_index: usize, focus: &FocusHandle) -> Option<impl IntoElement> {
         self.visibility_guard.is_visible().then(|| {
             SectionButton::new(
-                self.title,
+                i18n::translate(self.title),
                 self.icon,
                 self.action,
                 button_index,
@@ -165,52 +166,52 @@ impl SectionEntry {
 
 const CONTENT: (Section<4>, Section<3>) = (
     Section {
-        title: "Get Started",
+        title: n!("Get Started"),
         entries: [
             SectionEntry {
                 icon: IconName::Plus,
-                title: "New File",
+                title: n!("New File"),
                 action: &NewFile,
                 visibility_guard: SectionVisibility::Always,
             },
             SectionEntry {
                 icon: IconName::FolderOpen,
-                title: "Open Project",
+                title: n!("Open Project"),
                 action: &Open::DEFAULT,
                 visibility_guard: SectionVisibility::Always,
             },
             SectionEntry {
                 icon: IconName::CloudDownload,
-                title: "Clone Repository",
+                title: n!("Clone Repository"),
                 action: &GitClone,
                 visibility_guard: SectionVisibility::Always,
             },
             SectionEntry {
                 icon: IconName::ListCollapse,
-                title: "Open Command Palette",
+                title: n!("Open Command Palette"),
                 action: &command_palette::Toggle,
                 visibility_guard: SectionVisibility::Always,
             },
         ],
     },
     Section {
-        title: "Configure",
+        title: n!("Configure"),
         entries: [
             SectionEntry {
                 icon: IconName::Settings,
-                title: "Open Settings",
+                title: n!("Open Settings"),
                 action: &OpenSettings,
                 visibility_guard: SectionVisibility::Always,
             },
             SectionEntry {
                 icon: IconName::Keyboard,
-                title: "Customize Keymaps",
+                title: n!("Customize Keymaps"),
                 action: &OpenKeymap,
                 visibility_guard: SectionVisibility::Always,
             },
             SectionEntry {
                 icon: IconName::Blocks,
-                title: "Explore Extensions",
+                title: n!("Explore Extensions"),
                 action: &Extensions {
                     category_filter: None,
                     id: None,
@@ -230,7 +231,7 @@ impl<const COLS: usize> Section<COLS> {
     fn render(self, index_offset: usize, focus: &FocusHandle) -> impl IntoElement {
         v_flex()
             .min_w_full()
-            .child(SectionHeader::new(self.title))
+            .child(SectionHeader::new(i18n::translate(self.title)))
             .children(
                 self.entries
                     .iter()
@@ -384,7 +385,7 @@ impl WelcomePage {
     ) -> impl IntoElement {
         v_flex()
             .w_full()
-            .child(SectionHeader::new("Recent Projects"))
+            .child(SectionHeader::new(t!("Recent Projects")))
             .children(recent_projects)
     }
 
@@ -483,7 +484,7 @@ impl Render for WelcomePage {
                             .child(Vector::square(VectorName::ZedLogo, rems_from_px(45_f32)))
                             .child(
                                 v_flex().child(Headline::new(welcome_label)).child(
-                                    Label::new("The editor for what's next")
+                                    Label::new(t!("The editor for what's next"))
                                         .size(LabelSize::Small)
                                         .color(Color::Muted)
                                         .italic(),
@@ -500,7 +501,7 @@ impl Render for WelcomePage {
                     .when(!self.fallback_to_recent_projects, |this| {
                         this.child(
                             v_flex().gap_4().child(Divider::horizontal()).child(
-                                Button::new("welcome-exit", "Return to Onboarding")
+                                Button::new("welcome-exit", t!("Return to Onboarding"))
                                     .tab_index(next_tab_index as isize)
                                     .full_width()
                                     .label_size(LabelSize::XSmall)
@@ -526,7 +527,7 @@ impl Item for WelcomePage {
     type Event = ItemEvent;
 
     fn tab_content_text(&self, _detail: usize, _cx: &App) -> SharedString {
-        "Welcome".into()
+        t!("Welcome")
     }
 
     fn telemetry_event_text(&self) -> Option<&'static str> {
@@ -663,7 +664,7 @@ fn project_name(paths: &PathList) -> String {
         .collect::<Vec<_>>()
         .join(", ");
     if joined.is_empty() {
-        "Untitled".to_string()
+        t!("Untitled").to_string()
     } else {
         joined
     }

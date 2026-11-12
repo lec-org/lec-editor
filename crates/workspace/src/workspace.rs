@@ -1,4 +1,5 @@
 pub mod active_file_name;
+pub mod activity_bar;
 pub mod dock;
 pub mod history_manager;
 pub mod invalid_item_view;
@@ -62,12 +63,13 @@ use gpui::{
     Action, AnyEntity, AnyView, AnyWeakView, App, AppContext, AsyncApp, AsyncWindowContext, Axis,
     Bounds, ClipboardItem, Context, Corners, CursorStyle, Decorations, DragMoveEvent, Entity,
     EntityId, EventEmitter, FocusHandle, Focusable, Global, HitboxBehavior, Hsla, KeyContext,
-    Keystroke, ManagedView, MouseButton, PathPromptOptions, Point, PromptLevel, Render, ResizeEdge,
-    Size, Stateful, Subscription, SystemWindowTabController, Task, TaskExt, Tiling, WeakEntity,
-    WindowBounds, WindowHandle, WindowId, WindowOptions, actions, canvas, point, relative, size,
-    transparent_black,
+    Keystroke, ManagedView, MouseButton, PathPromptOptions, Point, PromptButton, PromptLevel,
+    Render, ResizeEdge, Size, Stateful, Subscription, SystemWindowTabController, Task, TaskExt,
+    Tiling, WeakEntity, WindowBounds, WindowHandle, WindowId, WindowOptions, actions, canvas,
+    point, relative, size, transparent_black,
 };
 pub use history_manager::*;
+use i18n::t;
 pub use item::{
     FollowableItem, FollowableItemHandle, Item, ItemHandle, ItemSettings, PreviewTabsSettings,
     ProjectItem, SerializableItem, SerializableItemHandle, WeakItemHandle,
@@ -117,6 +119,7 @@ use settings::{
     update_settings_file,
 };
 
+use activity_bar::ActivityBar;
 use sqlez::{
     bindable::{Bind, Column, StaticColumnCount},
     statement::Statement,
@@ -157,9 +160,9 @@ use util::{
 };
 use uuid::Uuid;
 pub use workspace_settings::{
-    AccessibleMode, AutosaveSetting, BottomDockLayout, EncodingDisplayOptions, FocusFollowsMouse,
-    RestoreOnStartupBehavior, StatusBarSettings, TabBarSettings, WorkspaceSettings,
-    closing_last_window_quits_app, observe_accessible_mode,
+    AccessibleMode, ActivityBarSettings, AutosaveSetting, BottomDockLayout, EncodingDisplayOptions,
+    FocusFollowsMouse, RestoreOnStartupBehavior, StatusBarSettings, TabBarSettings,
+    WorkspaceSettings, closing_last_window_quits_app, observe_accessible_mode,
 };
 use zed_actions::{Spawn, feedback::FileBugReport, theme::ToggleMode};
 
@@ -804,12 +807,12 @@ fn handle_file_permalink(
                 .ok();
             }
             Err(err) => {
-                let action = if copy {
-                    "copy file permalink"
+                let message = if copy {
+                    t!("Failed to copy file permalink: {error}", error = err)
                 } else {
-                    "open file permalink"
-                };
-                let message = format!("Failed to {action}: {err}");
+                    t!("Failed to open file permalink: {error}", error = err)
+                }
+                .to_string();
                 anyhow::Result::<()>::Err(err).log_err();
 
                 workspace
@@ -1591,6 +1594,7 @@ pub struct Workspace {
     last_active_center_pane: Option<WeakEntity<Pane>>,
     last_active_view_id: Option<proto::ViewId>,
     status_bar: Entity<StatusBar>,
+    activity_bar: Entity<ActivityBar>,
     pub(crate) modal_layer: Entity<ModalLayer>,
     toast_layer: Entity<ToastLayer>,
     titlebar_item: Option<AnyView>,
@@ -1825,7 +1829,7 @@ impl Workspace {
                         let mut notification = MessageNotification::new(message.clone(), cx);
                         if let Some(link) = link {
                             notification = notification
-                                .more_info_message(link.label)
+                                .more_info_message(i18n::translate(link.label))
                                 .more_info_url(link.url);
                         }
 
@@ -1972,6 +1976,18 @@ impl Workspace {
         let left_dock_buttons = cx.new(|cx| PanelButtons::new(left_dock.clone(), cx));
         let bottom_dock_buttons = cx.new(|cx| PanelButtons::new(bottom_dock.clone(), cx));
         let right_dock_buttons = cx.new(|cx| PanelButtons::new(right_dock.clone(), cx));
+        // The activity bar visibility is read during render, so the layout must be
+        // rebuilt when settings change.
+        cx.observe_global::<SettingsStore>(|_, cx| cx.notify())
+            .detach();
+        let activity_bar = cx.new(|cx| {
+            ActivityBar::new(
+                weak_handle.clone(),
+                left_dock.clone(),
+                right_dock.clone(),
+                cx,
+            )
+        });
         let multi_workspace = window
             .root::<MultiWorkspace>()
             .flatten()
@@ -2097,6 +2113,7 @@ impl Workspace {
             last_active_center_pane: Some(center_pane.downgrade()),
             last_active_view_id: None,
             status_bar,
+            activity_bar,
             modal_layer,
             toast_layer,
             titlebar_item: None,
@@ -2888,6 +2905,13 @@ impl Workspace {
 
     pub fn set_sidebar_focus_handle(&mut self, handle: Option<FocusHandle>) {
         self.sidebar_focus_handle = handle;
+    }
+
+    pub fn activity_bar(&self) -> &Entity<ActivityBar> {
+        &self.activity_bar
+    }
+    pub fn activity_bar_visible(&self, cx: &App) -> bool {
+        ActivityBarSettings::get_global(cx).show
     }
 
     pub fn status_bar_visible(&self, cx: &App) -> bool {
@@ -4033,9 +4057,13 @@ impl Workspace {
                         );
                         window.prompt(
                             PromptLevel::Warning,
-                            "Do you want to save all changes in the following files?",
+                            &t!("Do you want to save all changes in the following files?"),
                             Some(&detail),
-                            &["Save all", "Discard all", "Cancel"],
+                            &[
+                                PromptButton::new(t!("Save all")),
+                                PromptButton::new(t!("Discard all")),
+                                PromptButton::cancel(t!("Cancel")),
+                            ],
                             cx,
                         )
                     })?;
@@ -8303,25 +8331,27 @@ impl Workspace {
                             window,
                             cx,
                         )
-                        .detach_and_prompt_err("Failed to save", window, cx, |_, _, _| None);
+                        .detach_and_prompt_err(&t!("Failed to save"), window, cx, |_, _, _| None);
                 }))
                 .on_action(cx.listener(|workspace, _: &FormatAndSave, window, cx| {
                     workspace
                         .save_active_item(SaveIntent::FormatAndSave, window, cx)
-                        .detach_and_prompt_err("Failed to save", window, cx, |_, _, _| None);
+                        .detach_and_prompt_err(&t!("Failed to save"), window, cx, |_, _, _| None);
                 }))
                 .on_action(cx.listener(
                     |workspace, _: &SaveWithoutFormat, window, cx| {
                         workspace
                             .save_active_item(SaveIntent::SaveWithoutFormat, window, cx)
-                            .detach_and_prompt_err("Failed to save", window, cx, |_, _, _| None);
+                            .detach_and_prompt_err(&t!("Failed to save"), window, cx, |_, _, _| {
+                                None
+                            });
                     },
                 ))
             })
             .on_action(cx.listener(|workspace, _: &SaveAs, window, cx| {
                 workspace
                     .save_active_item(SaveIntent::SaveAs, window, cx)
-                    .detach_and_prompt_err("Failed to save", window, cx, |_, _, _| None);
+                    .detach_and_prompt_err(&t!("Failed to save"), window, cx, |_, _, _| None);
             }))
             .on_action(
                 cx.listener(|workspace, _: &ActivatePreviousPane, window, cx| {
@@ -8871,9 +8901,9 @@ impl Workspace {
         // window. We only make it focusable in that case so it never adds a
         // hitbox or intercepts mouse focus for other users.
         let (dock_element_id, dock_label) = match position {
-            DockPosition::Left => ("left-dock", "Left dock"),
-            DockPosition::Right => ("right-dock", "Right dock"),
-            DockPosition::Bottom => ("bottom-dock", "Bottom dock"),
+            DockPosition::Left => ("left-dock", t!("Left dock")),
+            DockPosition::Right => ("right-dock", t!("Right dock")),
+            DockPosition::Bottom => ("bottom-dock", t!("Bottom dock")),
         };
         let dock_is_open = dock.read(cx).is_open();
         let a11y_active = window.is_a11y_active();
@@ -9092,7 +9122,7 @@ impl Workspace {
         div()
             .id("editor-region")
             .role(gpui::Role::Main)
-            .aria_label("Editor")
+            .aria_label(t!("Editor"))
             .when(window.is_a11y_active(), |this| {
                 this.track_focus(&self.region_focus_handles.editor)
             })
@@ -9689,12 +9719,15 @@ fn notify_if_database_failed(window: WindowHandle<MultiWorkspace>, cx: &mut Asyn
                         cx,
                         |cx| {
                             cx.new(|cx| {
-                                MessageNotification::new("Failed to load the database file.", cx)
-                                    .primary_message("File an Issue")
-                                    .primary_icon(IconName::Plus)
-                                    .primary_on_click(|window, cx| {
-                                        window.dispatch_action(Box::new(FileBugReport), cx)
-                                    })
+                                MessageNotification::new(
+                                    t!("Failed to load the database file."),
+                                    cx,
+                                )
+                                .primary_message("File an Issue")
+                                .primary_icon(IconName::Plus)
+                                .primary_on_click(|window, cx| {
+                                    window.dispatch_action(Box::new(FileBugReport), cx)
+                                })
                             })
                         },
                     );
@@ -9855,7 +9888,7 @@ impl Render for Workspace {
                         .track_focus(&self.titlebar_focus_handle)
                         .tab_group()
                         .role(gpui::Role::Toolbar)
-                        .aria_label("Title bar")
+                        .aria_label(t!("Title bar"))
                         .on_key_down(cx.listener(
                             |workspace, event: &gpui::KeyDownEvent, window, cx| {
                                 if event.keystroke.modifiers.modified() {
@@ -9956,7 +9989,13 @@ impl Render for Workspace {
                                                 DockPosition::Left => {
                                                     workspace.resize_left_dock(
                                                         e.event.position.x
-                                                            - workspace.bounds.left(),
+                                                            - workspace.bounds.left()
+                                                            - if workspace.activity_bar_visible(cx)
+                                                            {
+                                                                activity_bar::ACTIVITY_BAR_WIDTH
+                                                            } else {
+                                                                px(0.)
+                                                            },
                                                         window,
                                                         cx,
                                                     );
@@ -9983,8 +10022,17 @@ impl Render for Workspace {
                                     },
                                 ))
                             })
-                            .child({
-                                match bottom_dock_layout {
+                            .child(
+                                h_flex()
+                                    .flex_1()
+                                    .w_full()
+                                    .min_h_0()
+                                    .overflow_hidden()
+                                    .when(self.activity_bar_visible(cx), |this| {
+                                        this.child(self.activity_bar.clone())
+                                    })
+                                    .child({
+                                        match bottom_dock_layout {
                                     BottomDockLayout::Full => div()
                                         .flex()
                                         .flex_col()
@@ -10223,8 +10271,9 @@ impl Render for Workspace {
                                             window,
                                             cx,
                                         )),
-                                }
-                            })
+                                }.flex_1().min_w_0().overflow_hidden()
+                                    }),
+                            )
                             .children(self.zoomed.as_ref().and_then(|view| {
                                 let zoomed_view = view.upgrade()?;
                                 let zoomed_element = match zoomed_paddings {
@@ -11546,7 +11595,7 @@ pub fn open_paths(
                 workspace.update(cx, |workspace, cx| {
                     for item in open_task.iter().flatten() {
                         if let Err(e) = item {
-                            workspace.show_error(format!("Error: {e}"), cx);
+                            workspace.show_error(t!("Error: {error}", error = e).to_string(), cx);
                         }
                     }
                 });
@@ -11597,10 +11646,10 @@ pub fn open_paths(
                     workspace.update(cx, |workspace, cx| {
                         workspace.show_notification(NotificationId::unique::<OpenInWsl>(), cx, move |cx| {
                             let display_path = util::markdown::MarkdownInlineCode(&path.to_string_lossy());
-                            let msg = format!("{display_path} is inside a WSL filesystem, some features may not work unless you open it with WSL remote");
+                            let msg = t!("{path} is inside a WSL filesystem, some features may not work unless you open it with WSL remote", path = display_path);
                             cx.new(move |cx| {
                                 MessageNotification::new(msg, cx)
-                                    .primary_message("Open in WSL")
+                                    .primary_message(t!("Open in WSL"))
                                     .primary_icon(IconName::FolderOpen)
                                     .primary_on_click(move |window, cx| {
                                         window.dispatch_action(Box::new(remote::OpenWslPath {
@@ -11895,7 +11944,7 @@ async fn open_remote_project_inner(
         for error in project_path_errors {
             if error.error_code() == proto::ErrorCode::DevServerProjectPathDoesNotExist {
                 if let Some(path) = error.error_tag("path") {
-                    workspace.show_error(format!("'{path}' does not exist"), cx)
+                    workspace.show_error(t!("'{path}' does not exist", path = path).to_string(), cx)
                 }
             } else {
                 workspace.show_error(format!("{error}"), cx)
@@ -12046,9 +12095,12 @@ pub fn reload(cx: &mut App) {
             .update(cx, |_, window, cx| {
                 window.prompt(
                     PromptLevel::Info,
-                    "Are you sure you want to restart?",
+                    &t!("Are you sure you want to restart?"),
                     None,
-                    &["Restart", "Cancel"],
+                    &[
+                        PromptButton::new(t!("Restart")),
+                        PromptButton::cancel(t!("Cancel")),
+                    ],
                     cx,
                 )
             })

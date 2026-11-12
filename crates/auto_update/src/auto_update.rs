@@ -264,103 +264,22 @@ struct GlobalAutoUpdate(Option<Entity<AutoUpdater>>);
 
 impl Global for GlobalAutoUpdate {}
 
-pub fn init(client: Arc<Client>, cx: &mut App) {
+pub fn init(_client: Arc<Client>, cx: &mut App) {
     cx.observe_new(|workspace: &mut Workspace, _window, _cx| {
         workspace.register_action(|_, action, window, cx| check(action, window, cx));
-
-        workspace.register_action(|_, action, _, cx| {
-            view_release_notes(action, cx);
-        });
+        workspace.register_action(|_, action, _, cx| view_release_notes(action, cx));
     })
     .detach();
-
-    let version = release_channel::AppVersion::global(cx);
-    let auto_updater = cx.new(|cx| {
-        let updater = AutoUpdater::new(version, client, cx);
-
-        let poll_for_updates = ReleaseChannel::try_global(cx)
-            .map(|channel| channel.poll_for_updates())
-            .unwrap_or(false);
-
-        if option_env!("ZED_UPDATE_EXPLANATION").is_none()
-            && env::var("ZED_UPDATE_EXPLANATION").is_err()
-            && poll_for_updates
-        {
-            let mut update_subscription = AutoUpdateSetting::get_global(cx)
-                .0
-                .then(|| updater.start_polling(cx));
-
-            cx.observe_global::<SettingsStore>(move |updater: &mut AutoUpdater, cx| {
-                if AutoUpdateSetting::get_global(cx).0 {
-                    if update_subscription.is_none() {
-                        update_subscription = Some(updater.start_polling(cx))
-                    }
-                } else {
-                    update_subscription.take();
-                }
-            })
-            .detach();
-        }
-
-        updater
-    });
-    cx.set_global(GlobalAutoUpdate(Some(auto_updater)));
+    // Signed LEC update artifacts are not published yet. Never initialize the Zed updater.
+    cx.set_global(GlobalAutoUpdate(None));
 }
 
-pub fn check(_: &Check, window: &mut Window, cx: &mut App) {
-    if let Some(message) = option_env!("ZED_UPDATE_EXPLANATION")
-        .map(ToOwned::to_owned)
-        .or_else(|| env::var("ZED_UPDATE_EXPLANATION").ok())
-    {
-        drop(window.prompt(
-            gpui::PromptLevel::Info,
-            "Zed was installed via a package manager.",
-            Some(&message),
-            &["OK"],
-            cx,
-        ));
-        return;
-    }
-
-    if !ReleaseChannel::try_global(cx)
-        .map(|channel| channel.poll_for_updates())
-        .unwrap_or(false)
-    {
-        return;
-    }
-
-    if let Some(updater) = AutoUpdater::get(cx) {
-        updater.update(cx, |updater, cx| updater.poll(UpdateCheckType::Manual, cx));
-    } else {
-        drop(window.prompt(
-            gpui::PromptLevel::Info,
-            "Could not check for updates",
-            Some("Auto-updates disabled for non-bundled app."),
-            &["OK"],
-            cx,
-        ));
-    }
+pub fn check(_: &Check, _window: &mut Window, cx: &mut App) {
+    cx.open_url("https://github.com/lec-org/lec-editor/releases");
 }
 
-pub fn release_notes_url(cx: &mut App) -> Option<String> {
-    let release_channel = ReleaseChannel::try_global(cx)?;
-    let url = match release_channel {
-        ReleaseChannel::Stable | ReleaseChannel::Preview => {
-            let auto_updater = AutoUpdater::get(cx)?;
-            let auto_updater = auto_updater.read(cx);
-            let mut current_version = auto_updater.current_version.clone();
-            current_version.pre = semver::Prerelease::EMPTY;
-            current_version.build = semver::BuildMetadata::EMPTY;
-            let release_channel = release_channel.dev_name();
-            let path = format!("/releases/{release_channel}/{current_version}");
-            auto_updater.client.http_client().build_url(&path)
-        }
-        ReleaseChannel::Nightly => {
-            "https://github.com/zed-industries/zed/commits/nightly/".to_string()
-        }
-        ReleaseChannel::Dev => "https://github.com/zed-industries/zed/commits/main/".to_string(),
-    };
-    Some(url)
+pub fn release_notes_url(_cx: &mut App) -> Option<String> {
+    Some("https://github.com/lec-org/lec-editor/releases".into())
 }
 
 pub fn view_release_notes(_: &ViewReleaseNotes, cx: &mut App) -> Option<()> {
