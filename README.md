@@ -5,7 +5,7 @@
 
 LEC Editor is a C/C++ editor fork of Zed. It keeps the existing file and folder workflow and aims to bundle compilation, execution, and a small supported library catalog.
 
-Current status: the development baseline is Zed `v1.28.1` on `lec-editor-baseline`. Only fork documentation has been added; application customization and Windows validation have not started. The installation links below refer to upstream Zed, not an LEC Editor release.
+Current status: based on Zed `v1.28.1` on `lec-editor-baseline`. The first adaptation adds a reduced application surface, Wu-based Chinese localization, file-tree feedback and a separate Windows identity. See [implementation and validation](docs/lec/IMPLEMENTATION.md) and [Wu provenance](docs/lec/THIRD_PARTY.md). Bundled C/C++ compilation, execution and library management are still pending. The installation links below refer to upstream Zed, not an LEC Editor release.
 
 See [the pinned upstream baseline](./UPSTREAM.md) and [the first-stage scope and Wu review](./docs/lec/README.md).
 

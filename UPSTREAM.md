@@ -10,7 +10,7 @@
 
 This is a GitHub fork with a separate desktop application repository. The local `origin` remote points to LEC and `upstream` points to Zed. The fork's inherited `main` branch is separate from the pinned development branch. An inherited branch named `codex` prevents creating `codex/*` branches, so this baseline uses `lec-editor-baseline`.
 
-Only `README.md`, this file, and `docs/lec/README.md` differ from the pinned release at baseline setup. No application source, dependencies, settings, packaging, or workflows have been changed. No Wu code has been imported. Compilation and Windows runtime compatibility have not been verified.
+The initial baseline commit changed only fork documentation. Subsequent LEC changes are recorded in `docs/lec/IMPLEMENTATION.md`; imported Wu sources and their exact commits are recorded in `docs/lec/THIRD_PARTY.md`. Windows runtime acceptance remains separate from automated source and build checks.
 
 Future upgrades should select an explicit Zed release, compare it with the recorded baseline, reapply the focused LEC changes, and validate the Windows build and C/C++ workflow before updating this record.
 
