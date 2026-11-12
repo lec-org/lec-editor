@@ -1,4 +1,8 @@
 {
+  "Your settings are out of date, and need to be updated.": "设置格式已过时，需要更新。",
+  "They can be automatically migrated to the latest version.": "可以自动迁移为最新格式。",
+  "They must be manually migrated to the latest version.": "需要手动迁移为最新格式。",
+  "Your settings file is out of date, automatic migration failed": "设置文件格式已过时，自动迁移失败。",
   "Toggle GPUI Inspector": "切换 GPUI 检查器",
   "LEC Editor": "LEC Editor",
   "About LEC Editor": "关于 LEC Editor",

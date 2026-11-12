@@ -267,7 +267,9 @@ impl Global for GlobalAutoUpdate {}
 pub fn init(_client: Arc<Client>, cx: &mut App) {
     cx.observe_new(|workspace: &mut Workspace, _window, _cx| {
         workspace.register_action(|_, action, window, cx| check(action, window, cx));
-        workspace.register_action(|_, action, _, cx| view_release_notes(action, cx));
+        workspace.register_action(|_, action, _, cx| {
+            view_release_notes(action, cx);
+        });
     })
     .detach();
     // Signed LEC update artifacts are not published yet. Never initialize the Zed updater.

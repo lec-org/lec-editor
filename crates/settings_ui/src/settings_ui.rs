@@ -3693,7 +3693,7 @@ impl SettingsWindow {
                     return div()
                         .px_8()
                         .when(settings_window.sub_page_stack.is_empty(), |element| {
-                            element.when_some(root_nav_label, |element, title| {
+                            element.when_some(root_nav_label.clone(), |element, title| {
                                 element
                                     .child(Label::new(title).size(LabelSize::Large).mt_2().mb_3())
                             })
@@ -4023,17 +4023,17 @@ impl SettingsWindow {
                 })
                 .map(|this| match &error.migration_status {
                     settings::MigrationStatus::Succeeded => this.child(banner(
-                        "Your settings are out of date, and need to be updated.",
+                        t!("Your settings are out of date, and need to be updated."),
                         match &self.current_file {
-                            SettingsUiFile::User => "They can be automatically migrated to the latest version.",
-                            SettingsUiFile::Server(_) | SettingsUiFile::Project(_)  => "They must be manually migrated to the latest version."
+                            SettingsUiFile::User => t!("They can be automatically migrated to the latest version."),
+                            SettingsUiFile::Server(_) | SettingsUiFile::Project(_)  => t!("They must be manually migrated to the latest version.")
                         }.to_string(),
                         &mut self.shown_errors,
                         cx,
                     )),
                     settings::MigrationStatus::Failed { error: err } if !parse_failed => this
                         .child(banner(
-                            "Your settings file is out of date, automatic migration failed",
+                            t!("Your settings file is out of date, automatic migration failed"),
                             err.clone(),
                             &mut self.shown_errors,
                             cx,
