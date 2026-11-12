@@ -23,6 +23,7 @@ use ui::{
     ButtonStyle, ContextMenu, ContextMenuEntry, DocumentationSide, IconButton, IconName, IconSize,
     PopoverMenu, PopoverMenuHandle, Tooltip, prelude::*,
 };
+use util::ResultExt as _;
 use vim_mode_setting::{HelixModeSetting, VimModeSetting};
 use workspace::item::ItemBufferKind;
 use workspace::{
@@ -676,6 +677,29 @@ impl Render for QuickActionBar {
         h_flex()
             .id("quick action bar")
             .gap(DynamicSpacing::Base01.rems(cx))
+            .when(is_full, |this| {
+                let workspace = self.workspace.clone();
+                this.child(
+                    Button::new("run-current-file", i18n::t!("Run"))
+                        .start_icon(Icon::new(IconName::PlayFilled).color(Color::Success))
+                        .tooltip(Tooltip::for_action_title(
+                            i18n::t!("Run Current File"),
+                            &zed_actions::RunCurrentFile,
+                        ))
+                        .on_click(move |_, window, cx| {
+                            workspace
+                                .update(cx, |workspace, cx| {
+                                    super::c_file::run(
+                                        workspace,
+                                        &zed_actions::RunCurrentFile,
+                                        window,
+                                        cx,
+                                    );
+                                })
+                                .log_err();
+                        }),
+                )
+            })
             .children(self.render_preview_button(cx))
             .children(search_button)
             .children(code_actions_dropdown)

@@ -33,7 +33,6 @@
       "ctrl-0": ["zed::ResetBufferFontSize", { "persist": false }],
       "ctrl-alt-,": "zed::OpenSettingsFile",
       "ctrl-q": "zed::Quit",
-      "f4": "debugger::Start",
       "ctrl-alt-l": "lsp_tool::ToggleMenu",
       "ctrl-alt-shift-s": "workspace::ToggleWorktreeSecurity",
     },
@@ -116,9 +115,6 @@
       "ctrl-'": "editor::ToggleSelectedDiffHunks",
       "ctrl-\"": "editor::ExpandAllDiffHunks",
       "ctrl-i": "editor::ShowSignatureHelp",
-      "alt-g b": "git::Blame",
-      "alt-g m": "git::OpenModifiedFiles",
-      "alt-g r": "git::ReviewDiff",
       "menu": "editor::OpenContextMenu",
       "shift-f10": "editor::OpenContextMenu",
       "ctrl-alt-shift-e": "editor::ToggleEditPrediction",
@@ -175,15 +171,6 @@
     },
   },
   {
-    "context": "Editor && !agent_diff",
-    "bindings": {
-      "ctrl-k ctrl-r": "git::Restore",
-      "ctrl-alt-y": "git::ToggleStaged",
-      "alt-y": "git::StageAndNext",
-      "alt-shift-y": "git::UnstageAndNext",
-    },
-  },
-  {
     "context": "AgentPanel",
     "bindings": {
       "ctrl-shift-e": "project_panel::ToggleFocus",
@@ -225,7 +212,6 @@
     "context": "AcpThread > Editor",
     "use_key_equivalents": true,
     "bindings": {
-      "ctrl-shift-d": "git::Diff",
       // `alt-l` is provided as an alternative to `alt-tab` as the latter breaks on Linux under the `AcpThread > Editor` context
     },
   },
@@ -505,7 +491,6 @@
       // "alt-ctrl-shift-o": ["projects::OpenRemote", { "from_existing_connection": true }],
       "alt-ctrl-shift-o": ["projects::OpenRemote", { "from_existing_connection": false }],
       "alt-ctrl-shift-b": "branches::OpenRecent",
-      "alt-ctrl-shift-w": "git::Worktree",
       "alt-shift-enter": "toast::RunAction",
       "ctrl-~": "workspace::NewTerminal",
       "save": "workspace::Save",
@@ -560,8 +545,6 @@
       "ctrl-shift-m": "diagnostics::Deploy",
       "ctrl-shift-e": "project_panel::ToggleFocus",
       "ctrl-shift-b": "outline_panel::ToggleFocus",
-      "ctrl-shift-g": "git_panel::ToggleFocus",
-      "ctrl-shift-d": "debug_panel::ToggleFocus",
       "alt-save": "workspace::SaveAll",
       "ctrl-alt-s": "workspace::SaveAll",
       "ctrl-k n": "encoding_selector::Toggle",
@@ -588,7 +571,6 @@
       // "foo-bar": ["task::Spawn", { "task_name": "MyTask", "reveal_target": "dock" }]
       // or by tag:
       // "foo-bar": ["task::Spawn", { "task_tag": "MyTag" }],
-      "f5": "debugger::Rerun",
       "ctrl-f4": ["pane::CloseActiveItem", { "close_pinned": false }],
       "ctrl-w": ["pane::CloseActiveItem", { "close_pinned": false }],
       "ctrl-alt-w": "workspace::CloseActiveDock",
@@ -608,25 +590,6 @@
     "use_key_equivalents": true,
     "bindings": {
       "space": "menu::Confirm",
-    },
-  },
-  {
-    "context": "Workspace && debugger_running",
-    "bindings": {
-      // Unbind `f5` to avoid dispatching the `debugger::Rerun` as that is what `f5` is bound to in the `Workspace`
-      // context.
-      "f5": null,
-    },
-  },
-  {
-    "context": "Workspace && debugger_stopped",
-    "bindings": {
-      "f5": "debugger::Continue",
-      "f7": "debugger::StepOver",
-      "f10": "debugger::StepOver",
-      "f11": "debugger::StepInto",
-      "ctrl-f11": "debugger::StepInto",
-      "shift-f11": "debugger::StepOut",
     },
   },
   {
@@ -744,27 +707,6 @@
       "down": "editor::SignatureHelpNext",
     },
   },
-  {
-    "context": "Editor && DebuggerHover",
-    "bindings": {
-      "escape": "editor::Cancel",
-      "left": "editor::DebuggerHoverCollapseSelected",
-      "down": "editor::DebuggerHoverSelectNext",
-      "up": "editor::DebuggerHoverSelectPrevious",
-      "right": "editor::DebuggerHoverExpandSelected",
-    },
-  },
-  {
-    "context": "DebuggerHoverMenu",
-    "bindings": {
-      "enter": "menu::Confirm",
-      "escape": "menu::Cancel",
-      "up": "menu::SelectPrevious",
-      "down": "menu::SelectNext",
-      "home": "menu::SelectFirst",
-      "end": "menu::SelectLast",
-    },
-  },
   // Custom bindings
   {
     "bindings": {
@@ -875,91 +817,10 @@
     },
   },
   {
-    "context": "GitPanel",
-    "bindings": {
-      "ctrl-1": "git_panel::ActivateChangesTab",
-      "ctrl-2": "git_panel::ActivateHistoryTab",
-    },
-  },
-  {
-    "context": "GitPanel && (ChangesList || HistoryList) && !GitBranchSelector && !GitRepositorySelector",
-    "bindings": {
-      "up": "menu::SelectPrevious",
-      "down": "menu::SelectNext",
-      "shift-up": "menu::SelectPrevious",
-      "shift-down": "menu::SelectNext",
-      "enter": "menu::Confirm",
-      "escape": "menu::Cancel",
-    },
-  },
-  {
-    "context": "GitPanel && ChangesList && !GitBranchSelector && !GitRepositorySelector",
-    "bindings": {
-      "left": "git_panel::CollapseSelectedEntry",
-      "right": "git_panel::ExpandSelectedEntry",
-      "up": "git_panel::PreviousEntry",
-      "down": "git_panel::NextEntry",
-      "alt-y": "git::StageFile",
-      "alt-shift-y": "git::UnstageFile",
-      "ctrl-alt-y": "git::ToggleStaged",
-      "space": "git::ToggleStaged",
-      "shift-space": "git::StageRange",
-      "alt-copy": "workspace::CopyPath",
-      "ctrl-alt-c": "workspace::CopyPath",
-      "alt-shift-copy": "workspace::CopyRelativePath",
-      "alt-ctrl-shift-c": "workspace::CopyRelativePath",
-      "tab": "git_panel::FocusEditor",
-      "shift-tab": "git_panel::FocusEditor",
-      "alt-enter": "menu::SecondaryConfirm",
-      "delete": ["git::RestoreFile", { "skip_prompt": false }],
-      "backspace": ["git::RestoreFile", { "skip_prompt": false }],
-      "shift-delete": ["git::RestoreFile", { "skip_prompt": false }],
-      "ctrl-backspace": ["git::RestoreFile", { "skip_prompt": false }],
-      "ctrl-delete": ["git::RestoreFile", { "skip_prompt": false }],
-    },
-  },
-  {
-    "context": "GitPanel && CommitEditor",
-    "use_key_equivalents": true,
-    "bindings": {
-      "escape": "git::Cancel",
-    },
-  },
-  {
     "context": "GitCommit > Editor && mode == auto_height",
     "bindings": {
       "escape": "menu::Cancel",
       "enter": "editor::Newline",
-      "ctrl-enter": "git::Commit",
-      "ctrl-shift-enter": "git::Amend",
-      "alt-l": "git::GenerateCommitMessage",
-    },
-  },
-  {
-    "context": "GitPanel",
-    "bindings": {
-      "ctrl-g ctrl-g": "git::Fetch",
-      "ctrl-g up": "git::Push",
-      "ctrl-g down": "git::Pull",
-      "ctrl-g shift-down": "git::PullRebase",
-      "ctrl-g shift-up": "git::ForcePush",
-      "ctrl-g d": "git::Diff",
-      "ctrl-g backspace": "git::RestoreTrackedFiles",
-      "ctrl-g shift-backspace": "git::TrashUntrackedFiles",
-      "ctrl-space": "git::StageAll",
-      "ctrl-shift-space": "git::UnstageAll",
-      "ctrl-enter": "git::Commit",
-      "ctrl-shift-enter": "git::Amend",
-    },
-  },
-  {
-    "context": "GitDiff > Editor",
-    "bindings": {
-      "ctrl-enter": "git::Commit",
-      "ctrl-shift-enter": "git::Amend",
-      "ctrl-space": "git::StageAll",
-      "ctrl-shift-space": "git::UnstageAll",
-      "ctrl-k ctrl-r": "git::RestoreAndNext",
     },
   },
   {
@@ -971,59 +832,7 @@
   {
     "context": "CommitEditor > Editor",
     "bindings": {
-      "escape": "git_panel::FocusChanges",
-      "tab": "git_panel::FocusChanges",
-      "shift-tab": "git_panel::FocusChanges",
       "enter": "editor::Newline",
-      "ctrl-enter": "git::Commit",
-      "ctrl-shift-enter": "git::Amend",
-      "alt-up": "git_panel::FocusChanges",
-      "alt-l": "git::GenerateCommitMessage",
-      "shift-escape": "git::ExpandCommitEditor",
-      "alt-shift-escape": "git::ToggleFillCommitEditor",
-    },
-  },
-  {
-    // While a debug session is live, `Pause`/`Stop`/`RerunSession` take over their F-keys
-    // (region navigation stays on `ctrl-f6` / `shift-f6`), so they're inert when not debugging.
-    // Step commands and `Continue` are scoped to `debugger_stopped` instead, since they only
-    // make sense while execution is actually paused.
-    // `debugger::Start` stays global so a session can be started from anywhere.
-    "context": "Workspace && debugger_session",
-    "bindings": {
-      "f6": "debugger::Pause",
-      "shift-f5": "debugger::Stop",
-      "ctrl-shift-f5": "debugger::RerunSession",
-    },
-  },
-  {
-    "context": "DebugPanel",
-    "bindings": {
-      "ctrl-t": "debugger::ToggleThreadPicker",
-      "ctrl-i": "debugger::ToggleSessionPicker",
-      "shift-alt-escape": "debugger::ToggleExpandItem",
-    },
-  },
-  {
-    "context": "VariableList",
-    "bindings": {
-      "left": "variable_list::CollapseSelectedEntry",
-      "right": "variable_list::ExpandSelectedEntry",
-      "enter": "variable_list::EditVariable",
-      "ctrl-c": "variable_list::CopyVariableValue",
-      "ctrl-alt-c": "variable_list::CopyVariableName",
-      "delete": "variable_list::RemoveWatch",
-      "backspace": "variable_list::RemoveWatch",
-      "alt-enter": "variable_list::AddWatch",
-    },
-  },
-  {
-    "context": "BreakpointList",
-    "bindings": {
-      "space": "debugger::ToggleEnableBreakpoint",
-      "backspace": "debugger::UnsetBreakpoint",
-      "left": "debugger::PreviousBreakpointProperty",
-      "right": "debugger::NextBreakpointProperty",
     },
   },
   {
@@ -1182,21 +991,6 @@
     },
   },
   {
-    "context": "DebugConsole > Editor",
-    "use_key_equivalents": true,
-    "bindings": {
-      "enter": "menu::Confirm",
-      "alt-enter": "console::WatchExpression",
-    },
-  },
-  {
-    "context": "RunModal",
-    "bindings": {
-      "ctrl-tab": "pane::ActivateNextItem",
-      "ctrl-shift-tab": "pane::ActivatePreviousItem",
-    },
-  },
-  {
     "context": "MarkdownPreview",
     "bindings": {
       "pageup": "markdown::ScrollPageUp",
@@ -1329,14 +1123,6 @@
     },
   },
   {
-    "context": "StashDiff > Editor",
-    "bindings": {
-      "ctrl-space": "git::ApplyCurrentStash",
-      "ctrl-shift-space": "git::PopCurrentStash",
-      "ctrl-shift-backspace": "git::DropCurrentStash",
-    },
-  },
-  {
     "context": "SettingsWindow > NavigationMenu",
     "use_key_equivalents": true,
     "bindings": {
@@ -1418,15 +1204,6 @@
       "ctrl-1": "image_viewer::ZoomToActualSize",
       "ctrl-k r": "editor::RevealInFileManager",
       "ctrl-shift-0": "image_viewer::FitToView",
-    },
-  },
-  {
-    "context": "RunModal",
-    "bindings": {
-      "alt-1": "new_process_modal::ActivateTaskTab",
-      "alt-2": "new_process_modal::ActivateDebugTab",
-      "alt-3": "new_process_modal::ActivateAttachTab",
-      "alt-4": "new_process_modal::ActivateLaunchTab",
     },
   },
   {

@@ -25,6 +25,7 @@ members = [
     "crates/benchmarks",
     "crates/breadcrumbs",
     "crates/buffer_diff",
+    "crates/c_runner",
     "crates/call",
     "crates/call_hierarchy",
     "crates/channel",

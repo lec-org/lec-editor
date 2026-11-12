@@ -2,7 +2,7 @@ use gpui::{App, Menu, MenuItem, OsAction};
 use i18n::t;
 use release_channel::ReleaseChannel;
 use terminal_view::terminal_panel;
-use zed_actions::{Quit, debug_panel, dev, git_panel, project_panel};
+use zed_actions::{Quit, dev, project_panel};
 
 pub fn app_menus(cx: &mut App) -> Vec<Menu> {
     let mut view_items = vec![
@@ -41,11 +41,9 @@ pub fn app_menus(cx: &mut App) -> Vec<Menu> {
         MenuItem::action(t!("Project Panel"), project_panel::ToggleFocus),
         MenuItem::action(t!("Outline Panel"), outline_panel::ToggleFocus),
         MenuItem::action(t!("Terminal Panel"), terminal_panel::Toggle),
-        MenuItem::action(t!("Debugger Panel"), debug_panel::ToggleFocus),
     ];
 
     view_items.extend([
-        MenuItem::action(t!("Git Panel"), git_panel::ToggleFocus),
         MenuItem::separator(),
         MenuItem::action(t!("Diagnostics"), diagnostics::Deploy),
         MenuItem::separator(),
@@ -293,28 +291,8 @@ pub fn app_menus(cx: &mut App) -> Vec<Menu> {
             name: t!("Run"),
             disabled: false,
             items: vec![
-                MenuItem::action(
-                    t!("Spawn Task"),
-                    zed_actions::Spawn::ViaModal {
-                        reveal_target: None,
-                    },
-                ),
-                MenuItem::action(t!("Start Debugger"), debugger_ui::Start),
-                MenuItem::separator(),
-                MenuItem::action(t!("Edit tasks.json…"), zed_actions::OpenProjectTasks),
-                MenuItem::action(t!("Edit debug.json…"), zed_actions::OpenProjectDebugTasks),
-                MenuItem::separator(),
-                MenuItem::action(t!("Continue"), debugger_ui::Continue),
-                MenuItem::action(t!("Step Over"), debugger_ui::StepOver),
-                MenuItem::action(t!("Step Into"), debugger_ui::StepInto),
-                MenuItem::action(t!("Step Out"), debugger_ui::StepOut),
-                MenuItem::separator(),
-                MenuItem::action(t!("Toggle Breakpoint"), editor::actions::ToggleBreakpoint),
-                MenuItem::action(t!("Edit Breakpoint"), editor::actions::EditLogBreakpoint),
-                MenuItem::action(
-                    t!("Clear All Breakpoints"),
-                    debugger_ui::ClearAllBreakpoints,
-                ),
+                MenuItem::action(t!("Run Current File"), zed_actions::RunCurrentFile),
+                MenuItem::action(t!("Terminal Panel"), terminal_panel::Toggle),
             ],
         },
         Menu {

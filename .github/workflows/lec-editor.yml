@@ -14,6 +14,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  c-runner:
+    runs-on: ubuntu-latest
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        run: rustup toolchain install 1.98.1 --profile minimal
+      - name: Test C and C++ compilation and execution
+        run: cargo +1.98.1 test --locked -p c_runner
   windows:
     runs-on: windows-2022
     timeout-minutes: 90
@@ -43,6 +53,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Test translations
         run: cargo +1.98.1 test --locked -p i18n
+      - name: Test the Windows runner
+        run: cargo +1.98.1 test --locked -p c_runner --lib
       - name: Check the Windows application
         run: cargo +1.98.1 check --locked --keep-going -p zed --bin leceditor
       - name: Test empty folder behavior

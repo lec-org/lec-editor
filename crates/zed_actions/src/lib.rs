@@ -38,6 +38,8 @@ pub struct ChangeKeybinding {
 actions!(
     zed,
     [
+        /// Saves, compiles and runs the current C or C++ source file.
+        RunCurrentFile,
         /// Opens the settings editor.
         #[action(deprecated_aliases = ["zed_actions::OpenSettingsEditor"])]
         OpenSettings,

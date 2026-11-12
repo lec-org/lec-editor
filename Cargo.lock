@@ -2588,6 +2588,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cd17eb909a8c6a894926bfcc3400a4bb0e732f5a57d37b1f14e8b29e329bace8"
 
 [[package]]
+name = "c_runner"
+version = "0.1.0"
+dependencies = [
+ "dunce",
+]
+
+[[package]]
 name = "cached"
 version = "0.56.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -18383,6 +18390,7 @@ dependencies = [
  "fs",
  "git_ui_core",
  "gpui",
+ "i18n",
  "icons",
  "livekit_client",
  "path",
@@ -22443,6 +22451,7 @@ dependencies = [
  "auto_update",
  "auto_update_ui",
  "breadcrumbs",
+ "c_runner",
  "call",
  "call_hierarchy",
  "channel",
@@ -22556,6 +22565,7 @@ dependencies = [
  "system_specs",
  "tab_switcher",
  "tabular_data_preview",
+ "task",
  "tasks_ui",
  "telemetry",
  "telemetry_events",

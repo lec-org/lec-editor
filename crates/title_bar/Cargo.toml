@@ -45,6 +45,7 @@ db.workspace = true
 git_ui_core.workspace = true
 gpui = { workspace = true, features = ["screen-capture"] }
 icons.workspace = true
+i18n.workspace = true
 livekit_client.workspace = true
 path.workspace = true
 project.workspace = true

@@ -623,7 +623,7 @@
     // Whether to show git status indicators on the branch icon in the titlebar.
     "show_branch_status_icon": false,
     // Whether to show the branch name button in the titlebar.
-    "show_branch_name": true,
+    "show_branch_name": false,
     // Whether to show the worktree name button in the titlebar.
     "show_worktree_name": true,
     // Whether to show the project host and name in the titlebar.
@@ -760,7 +760,7 @@
     // Whether to show bookmarks in the gutter.
     "bookmarks": true,
     // Whether to show breakpoints in the gutter.
-    "breakpoints": true,
+    "breakpoints": false,
     // Whether to show fold buttons in the gutter.
     "folds": true,
     // Minimum number of characters to reserve space for in the gutter.
@@ -1831,7 +1831,7 @@
     // Global switch to enable or disable all git integration features.
     // If set to true, disables all git integration features.
     // If set to false, individual git integration features below will be independently enabled or disabled.
-    "disable_git": false,
+    "disable_git": true,
     // Whether to enable git status tracking.
     "enable_status": true,
     // Whether to enable git diff display.

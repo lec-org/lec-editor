@@ -19,13 +19,13 @@ try {
     & "$PSScriptRoot/generate-licenses.ps1"
     if (-not $SkipBuild) {
         rustup target add $target
-        cargo build --locked --release --package zed --package cli --target $target
+        cargo build --locked --release --package zed --package cli --package c_runner --target $target
         if ($LASTEXITCODE -ne 0) { throw 'LEC Editor build failed' }
     }
 
     # ConPTY is downloaded by crates/zed/build.rs. Fail packaging if it is missing.
     $output = Join-Path $root "target/$target/release"
-    foreach ($file in @('leceditor.exe', 'conpty.dll', 'OpenConsole.exe')) {
+    foreach ($file in @('leceditor.exe', 'lec-run.exe', 'conpty.dll', 'OpenConsole.exe')) {
         Copy-Item (Join-Path $output $file) $stage -Force
     }
     New-Item -ItemType Directory -Force "$stage/bin" | Out-Null

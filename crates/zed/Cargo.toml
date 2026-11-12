@@ -63,7 +63,9 @@ path = "src/visual_test_runner.rs"
 required-features = ["visual-tests"]
 
 [dependencies]
+c_runner = { path = "../c_runner" }
 i18n.workspace = true
+task.workspace = true
 acp_thread.workspace = true
 action_log = { workspace = true, optional = true }
 activity_indicator.workspace = true

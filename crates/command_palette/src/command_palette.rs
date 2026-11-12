@@ -55,6 +55,10 @@ pub fn init(cx: &mut App) {
         "repl",
         "journal",
         "miniprofiler",
+        "git",
+        "git_panel",
+        "debugger",
+        "debug_panel",
     ] {
         filter.hide_namespace(namespace);
     }
