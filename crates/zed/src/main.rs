@@ -975,7 +975,7 @@ fn handle_open_request(request: OpenRequest, app_state: Arc<AppState>, cx: &mut 
                 })
                 .detach_and_log_err(cx);
             }
-            OpenRequestKind::AgentPanel { .. } => {
+            OpenRequestKind::AgentPanel => {
                 log::warn!("This link is not supported by LEC Editor");
             }
             OpenRequestKind::InstallSkill { .. } => {

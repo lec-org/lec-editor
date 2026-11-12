@@ -1,6 +1,5 @@
 use crate::handle_open_request;
 use crate::restore_or_create_workspace;
-use agent_ui::ExternalSourcePrompt;
 use anyhow::{Context as _, Result, anyhow};
 use cli::{CliRequest, CliResponse, CliResponseSink};
 use cli::{IpcHandshake, ipc};
@@ -54,9 +53,7 @@ pub enum OpenRequestKind {
     Extension {
         extension_id: String,
     },
-    AgentPanel {
-        external_source_prompt: Option<ExternalSourcePrompt>,
-    },
+    AgentPanel,
     InstallSkill {
         /// Full `SKILL.md` contents embedded in a `zed://skill` share link.
         content: String,
@@ -88,12 +85,7 @@ impl std::fmt::Debug for OpenRequestKind {
                 .debug_struct("Extension")
                 .field("extension_id", extension_id)
                 .finish(),
-            Self::AgentPanel {
-                external_source_prompt,
-            } => f
-                .debug_struct("AgentPanel")
-                .field("external_source_prompt", external_source_prompt)
-                .finish(),
+            Self::AgentPanel => write!(f, "AgentPanel"),
             Self::InstallSkill { content } => f
                 .debug_struct("InstallSkill")
                 .field("content_len", &content.len())
@@ -217,17 +209,10 @@ impl OpenRequest {
         }
     }
 
-    fn parse_agent_url(&mut self, agent_path: &str) {
-        // Format: "" or "?prompt=<text>".
-        let agent_path = agent_path.strip_prefix('/').unwrap_or(agent_path);
-        let external_source_prompt = agent_path.strip_prefix('?').and_then(|query| {
-            url::form_urlencoded::parse(query.as_bytes())
-                .find_map(|(key, value)| (key == "prompt").then_some(value))
-                .and_then(|prompt| ExternalSourcePrompt::new(prompt.as_ref()))
-        });
-        self.kind = Some(OpenRequestKind::AgentPanel {
-            external_source_prompt,
-        });
+    fn parse_agent_url(&mut self, _agent_path: &str) {
+        // Recognize legacy links so the caller can reject them. LEC has no Agent UI
+        // and deliberately does not retain or process the prompt payload.
+        self.kind = Some(OpenRequestKind::AgentPanel);
     }
 
     fn parse_skill_install_url(&mut self, url: &str) -> Result<()> {
@@ -1471,14 +1456,7 @@ mod tests {
             .unwrap()
         });
 
-        match request.kind {
-            Some(OpenRequestKind::AgentPanel {
-                external_source_prompt,
-            }) => {
-                assert_eq!(external_source_prompt, None);
-            }
-            _ => panic!("Expected AgentPanel kind"),
-        }
+        assert!(matches!(request.kind, Some(OpenRequestKind::AgentPanel)));
     }
 
     #[gpui::test]
@@ -1549,19 +1527,7 @@ mod tests {
             .unwrap()
         });
 
-        match request.kind {
-            Some(OpenRequestKind::AgentPanel {
-                external_source_prompt,
-            }) => {
-                assert_eq!(
-                    external_source_prompt
-                        .as_ref()
-                        .map(ExternalSourcePrompt::as_str),
-                    Some("Write me a script\nThanks")
-                );
-            }
-            _ => panic!("Expected AgentPanel kind"),
-        }
+        assert!(matches!(request.kind, Some(OpenRequestKind::AgentPanel)));
     }
 
     #[gpui::test]
@@ -1579,19 +1545,7 @@ mod tests {
             .unwrap()
         });
 
-        match request.kind {
-            Some(OpenRequestKind::AgentPanel {
-                external_source_prompt,
-            }) => {
-                assert_eq!(
-                    external_source_prompt
-                        .as_ref()
-                        .map(ExternalSourcePrompt::as_str),
-                    Some("hello")
-                );
-            }
-            _ => panic!("Expected AgentPanel kind"),
-        }
+        assert!(matches!(request.kind, Some(OpenRequestKind::AgentPanel)));
     }
 
     #[gpui::test]
@@ -1636,14 +1590,7 @@ mod tests {
             .unwrap()
         });
 
-        match request.kind {
-            Some(OpenRequestKind::AgentPanel {
-                external_source_prompt,
-            }) => {
-                assert_eq!(external_source_prompt, None);
-            }
-            _ => panic!("Expected AgentPanel kind"),
-        }
+        assert!(matches!(request.kind, Some(OpenRequestKind::AgentPanel)));
     }
 
     #[gpui::test]

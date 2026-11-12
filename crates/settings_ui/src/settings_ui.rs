@@ -1581,8 +1581,8 @@ impl SettingsPageItem {
 /// optional reset button and copy-link icon.
 fn render_settings_item_layout(
     settings_window: &SettingsWindow,
-    title: SharedString,
-    description: SharedString,
+    title: &'static str,
+    description: &'static str,
     control: AnyElement,
     reset_fn: Option<Box<dyn Fn(&mut Window, &mut App)>>,
     modified_in: Option<String>,
@@ -1763,8 +1763,8 @@ fn render_settings_item_link(
 }
 
 struct SettingItem {
-    title: SharedString,
-    description: SharedString,
+    title: &'static str,
+    description: &'static str,
     field: Box<dyn AnySettingField>,
     metadata: Option<Box<SettingsFieldMetadata>>,
     files: FileMask,
