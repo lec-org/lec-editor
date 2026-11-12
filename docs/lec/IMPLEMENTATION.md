@@ -34,6 +34,8 @@ cargo +1.98.1 test --locked -p workspace activity_bar_entries_and_toggle
 
 ## 验收范围
 
-本地已通过 `git diff --check`、修改文件的 rustfmt 检查以及 1294 个词条和产品边界检查。i18n 在隔离的最小 Cargo workspace 中通过 12 项测试（源码与词典仍取本仓库）；该检查不等同于完整编辑器构建。完整 Windows 应用与 UI 回归检查以 CI 日志为准。安装、卸载、与 Zed 并存、中文 DPI 显示及输入法、活动栏拖动和 C/C++ 交互终端仍需 Windows 实机验收；仅通过语法或编译检查不等同于这些行为验收完成。
+本地已通过 `git diff --check`、修改文件的 rustfmt 检查，以及 1298 个词条和产品边界检查。[Windows CI](https://github.com/lec-org/lec-editor/actions/runs/43253336241) 已通过锁定依赖的 12 项 i18n 测试、完整应用编译检查、3 项空目录回归测试、1 项活动栏回归测试和安装器语法检查。其后仅清理无用导入及未使用的旧反馈函数、同步自动更新默认值的测试断言，并更新文档；这些清理通过本地格式与产品边界检查。
+
+尚未生成正式 release 安装包。安装、卸载、与 Zed 并存、中文 DPI 显示及输入法、活动栏实际拖动和 C/C++ 交互终端仍需 Windows 实机验收；仅通过语法、编译或模拟界面测试不等同于这些行为验收完成。
 
 Wu 导入记录见 [THIRD_PARTY.md](THIRD_PARTY.md)。

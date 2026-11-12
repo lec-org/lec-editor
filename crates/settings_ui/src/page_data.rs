@@ -1,12 +1,11 @@
 use gpui::{Action as _, App};
 use i18n::n;
-use itertools::Itertools as _;
 use settings::{
     AudioInputDeviceName, AudioOutputDeviceName, EditPredictionDataCollectionChoice,
-    LanguageSettingsContent, SemanticTokens, SettingsContent,
+    LanguageSettingsContent, SettingsContent,
 };
-use std::sync::{Arc, OnceLock};
-use strum::{EnumMessage, IntoDiscriminant as _, VariantArray};
+use std::sync::Arc;
+use strum::IntoDiscriminant as _;
 use theme::SystemAppearance;
 use ui::IntoElement;
 

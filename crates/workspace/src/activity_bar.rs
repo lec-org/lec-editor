@@ -1,8 +1,8 @@
 use crate::Workspace;
 use crate::dock::{Dock, PanelHandle, activate_panel_button, panel_button_context_menu};
 use gpui::{
-    Action, Anchor, App, Context, Entity, FocusHandle, Focusable as _, IntoElement, ParentElement,
-    Pixels, Render, SharedString, Styled, Subscription, WeakEntity, Window, px,
+    Action, Anchor, App, Context, Entity, FocusHandle, IntoElement, ParentElement, Pixels, Render,
+    SharedString, Styled, Subscription, WeakEntity, Window, px,
 };
 use settings::SettingsStore;
 use std::sync::Arc;
