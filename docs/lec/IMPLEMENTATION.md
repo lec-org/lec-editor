@@ -32,10 +32,22 @@ cargo +1.98.1 test --locked -p workspace activity_bar_entries_and_toggle
 
 `.github/workflows/lec-editor.yml` 对 Windows 应用、翻译、文件树行为、活动栏和安装器语法进行检查。安装器语法检查使用临时占位文件，不生成可供用户安装的正式应用包。
 
+macOS 开发构建需要 Rust、Xcode Command Line Tools 和 CMake。只有 Command Line Tools 时，可使用运行时 Metal shader 编译：
+
+```sh
+cargo +1.98.1 build --locked -p zed --bin leceditor --features gpui_platform/runtime_shaders
+./target/debug/leceditor --dump-all-actions > /tmp/lec-actions.json
+python3 script/check-lec.py --actions-json /tmp/lec-actions.json
+```
+
+Debug 版本从源码目录读取资源，启动时可执行文件或工作目录必须位于 checkout 内；复制到临时 `.app` 后也要保留这一条件。上述构建不等同于可分发、签名的 macOS 安装包。
+
 ## 验收范围
 
 本地已通过 `git diff --check`、修改文件的 rustfmt 检查，以及 1298 个词条和产品边界检查。[Windows CI](https://github.com/lec-org/lec-editor/actions/runs/43253336241) 已通过锁定依赖的 12 项 i18n 测试、完整应用编译检查、3 项空目录回归测试、1 项活动栏回归测试和安装器语法检查。其后仅清理无用导入及未使用的旧反馈函数、同步自动更新默认值的测试断言，并更新文档；这些清理通过本地格式与产品边界检查。
 
 尚未生成正式 release 安装包。安装、卸载、与 Zed 并存、中文 DPI 显示及输入法、活动栏实际拖动和 C/C++ 交互终端仍需 Windows 实机验收；仅通过语法、编译或模拟界面测试不等同于这些行为验收完成。
+
+2026-11-13 在 Apple Silicon macOS 上完成完整 Debug 构建和原生窗口启动，实际打开 C 文件，确认语法高亮、中文空目录提示、左侧活动栏和文件树显示。修复了裁剪模块后残留快捷键导致的启动崩溃，并单独恢复原先由协作 UI 初始化的标题栏。全部 20 份内置键位配置通过 JSONC 解析和实际二进制动作注册表核对，产品边界检查也会阻止已裁剪模块的快捷键重新进入默认配置。本次未执行完整上游测试套件。
 
 Wu 导入记录见 [THIRD_PARTY.md](THIRD_PARTY.md)。

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Check fork identities, UI catalogs, and removed application dependencies."""
+import argparse
 import json
 import re
 from pathlib import Path
@@ -19,6 +20,43 @@ def check(condition, message):
 def rust_string(value):
     value = re.sub(r"\\u\{([0-9a-fA-F]+)\}", lambda match: chr(int(match[1], 16)), value)
     return json.loads('"' + value + '"')
+
+
+def parse_jsonc(source):
+    tokens = re.findall(r'//[^\n]*|/\*[\s\S]*?\*/|"(?:\\.|[^"\\])*"|[^\s]', source)
+    tokens = [token for token in tokens if not token.startswith(("//", "/*"))]
+    return json.loads("".join(
+        token for index, token in enumerate(tokens)
+        if not (token == "," and index + 1 < len(tokens) and tokens[index + 1] in ("}", "]"))
+    ))
+
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--actions-json", type=Path, help="Output of leceditor --dump-all-actions")
+arguments = parser.parse_args()
+registered_actions = None
+if arguments.actions_json:
+    actions = json.loads(arguments.actions_json.read_text(encoding="utf-8"))["actions"]
+    registered_actions = {action["name"] for action in actions}
+    registered_actions.update(alias for action in actions for alias in action["deprecated_aliases"])
+
+# Built-in keymaps are loaded before disabled-feature filtering, so an action
+# from a removed crate causes startup to fail even when its panel is hidden.
+removed_namespaces = (
+    "acp::", "agent::", "agents_sidebar::", "assistant::", "edit_prediction::",
+    "inline_assistant::", "zeta::", "collab_panel::", "channel_modal::",
+    "onboarding::", "repl::", "journal::", "miniprofiler::",
+)
+keymaps = list((ROOT / "assets/keymaps").rglob("*.json"))
+for path in keymaps:
+    for section in parse_jsonc(path.read_text(encoding="utf-8")):
+        for action in section.get("bindings", {}).values():
+            if isinstance(action, list):
+                action = action[0]
+            if isinstance(action, str):
+                check(not action.startswith(removed_namespaces), f"Removed action in {path}: {action}")
+                if registered_actions is not None:
+                    check(action in registered_actions, f"Unregistered action in {path}: {action}")
 
 
 catalog = {}
@@ -55,4 +93,4 @@ check("Zed" not in "\n".join(line for line in installer.splitlines() if not line
 updater = read("crates/auto_update/src/auto_update.rs")
 init = updater[updater.index("pub fn init("):updater.index("pub fn check(")]
 check("GlobalAutoUpdate(None)" in init and "AutoUpdater::new" not in init, "Upstream updater re-enabled")
-print(f"LEC boundaries and {len(used)} referenced translations checked.")
+print(f"LEC boundaries, {len(keymaps)} keymaps and {len(used)} referenced translations checked.")

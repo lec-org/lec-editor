@@ -6612,16 +6612,14 @@ mod tests {
     async fn test_disable_ai_filters_keybindings(cx: &mut gpui::TestAppContext) {
         let _app_state = init_keymap_test(cx);
 
-        // With AI enabled, the default keymap should include the assistant
-        // bindings that intercept e.g. ctrl-enter in the editor.
         cx.update(load_default_keymap);
         cx.update(|cx| {
             let keymap = cx.key_bindings();
             let keymap = keymap.borrow();
             let has_ai_binding = keymap.bindings().any(|binding| is_ai_keybinding(binding));
             assert!(
-                has_ai_binding,
-                "expected AI-namespaced bindings in the default keymap before disabling AI"
+                !has_ai_binding,
+                "LEC's default keymap must not reference removed AI features"
             );
         });
 
