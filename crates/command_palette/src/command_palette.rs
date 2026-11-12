@@ -39,6 +39,25 @@ actions!(command_palette, [RemoveSelected]);
 pub fn init(cx: &mut App) {
     CommandPaletteSettings::register(cx);
     command_palette_hooks::init(cx);
+    let filter = CommandPaletteFilter::global_mut(cx);
+    for namespace in [
+        "acp",
+        "agent",
+        "assistant",
+        "inline_assistant",
+        "edit_prediction",
+        "zeta",
+        "copilot",
+        "copilot_chat",
+        "collab_panel",
+        "channel",
+        "call",
+        "repl",
+        "journal",
+        "miniprofiler",
+    ] {
+        filter.hide_namespace(namespace);
+    }
     cx.observe_new(CommandPalette::register).detach();
 }
 

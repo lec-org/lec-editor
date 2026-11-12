@@ -487,6 +487,8 @@ fn main() {
         zed_actions::init();
 
         release_channel::init(app_version, cx);
+        let channel = ReleaseChannel::global(cx);
+        cx.set_app_identity(channel.app_id(), channel.display_name());
         gpui_tokio::init(cx);
         if let Some(app_commit_sha) = app_commit_sha {
             AppCommitSha::set_global(app_commit_sha, cx);
@@ -651,7 +653,6 @@ fn main() {
         watcher_debug::init(app_state.clone(), cx);
         auto_update::init(client.clone(), cx);
         dap_adapters::init(cx);
-        auto_update_ui::init(cx);
         reliability::init(client.clone(), app_state.workspace_store.clone(), cx);
         extension_host::init(
             extension_host_proxy.clone(),

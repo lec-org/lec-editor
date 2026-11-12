@@ -13,10 +13,13 @@ try {
     $env:ZED_RELEASE_CHANNEL = 'stable'
     $env:RELEASE_CHANNEL = 'stable'
     $stage = Join-Path $root "target/lec-windows-$Architecture"
+    if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
     New-Item -ItemType Directory -Force $stage | Out-Null
+    # Generate notices before compilation so the embedded license viewer is populated.
+    & "$PSScriptRoot/generate-licenses.ps1"
     if (-not $SkipBuild) {
         rustup target add $target
-        cargo build --locked --release --package zed --bin leceditor --target $target
+        cargo build --locked --release --package zed --package cli --target $target
         if ($LASTEXITCODE -ne 0) { throw 'LEC Editor build failed' }
     }
 
@@ -25,10 +28,19 @@ try {
     foreach ($file in @('leceditor.exe', 'conpty.dll', 'OpenConsole.exe')) {
         Copy-Item (Join-Path $output $file) $stage -Force
     }
+    New-Item -ItemType Directory -Force "$stage/bin" | Out-Null
+    Copy-Item (Join-Path $output 'cli.exe') "$stage/bin/leceditor.exe" -Force
     Copy-Item LICENSE-GPL $stage -Force
     Copy-Item docs/lec/THIRD_PARTY.md $stage -Force
-    # Generate the complete dependency notices, including upstream licenses.
-    & "$PSScriptRoot/generate-licenses.ps1" "$stage/licenses.md"
+    Copy-Item assets/licenses.md $stage -Force
+    if ($Architecture -eq 'x86_64') {
+        $agsArchive = Join-Path $root 'target/lec-ags-6.3.0.zip'
+        $agsDirectory = Join-Path $root 'target/lec-ags-6.3.0'
+        Invoke-WebRequest 'https://codeload.github.com/GPUOpen-LibrariesAndSDKs/AGS_SDK/zip/refs/tags/v6.3.0' -OutFile $agsArchive
+        Expand-Archive $agsArchive $agsDirectory -Force
+        Copy-Item "$agsDirectory/AGS_SDK-6.3.0/ags_lib/lib/amd_ags_x64.dll" $stage -Force
+        Copy-Item "$agsDirectory/AGS_SDK-6.3.0/LICENSE.txt" "$stage/AMD-AGS-LICENSE.txt" -Force
+    }
 
     $version = (Select-String '^version = "([^"]+)"' crates/zed/Cargo.toml).Matches[0].Groups[1].Value
     $archive = Join-Path $root "target/LECEditor-$version-$Architecture.zip"

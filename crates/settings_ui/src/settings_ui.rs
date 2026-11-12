@@ -2002,6 +2002,14 @@ impl SettingsWindow {
         let mut ui_font_size = ThemeSettings::get_global(cx).ui_font_size(cx);
         cx.observe_global_in::<SettingsStore>(window, move |this, window, cx| {
             this.fetch_files(window, cx);
+            if this
+                .search_index
+                .as_ref()
+                .is_some_and(|index| index.language != i18n::language())
+            {
+                this.update_matches(cx);
+                this.list_state.remeasure();
+            }
 
             // Whenever settings are changed, it's possible that the changed
             // settings affects the rendering of the `SettingsWindow`, like is
@@ -8084,7 +8092,7 @@ mod translation_tests {
         "Sublime Text",
         "TextMate",
         "VSCode",
-        "Wu",
+        "Zed",
         "简体中文",
     ];
 

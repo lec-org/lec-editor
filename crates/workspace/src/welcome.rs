@@ -452,9 +452,9 @@ impl Render for WelcomePage {
         };
 
         let welcome_label = if self.fallback_to_recent_projects {
-            "Welcome back to Zed"
+            t!("Welcome back to LEC Editor")
         } else {
-            "Welcome to Zed"
+            t!("Welcome to LEC Editor")
         };
 
         h_flex()

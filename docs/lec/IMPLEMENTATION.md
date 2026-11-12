@@ -28,7 +28,7 @@ cargo +1.98.1 test --locked -p workspace activity_bar_entries_and_toggle
 ./script/bundle-lec-windows.ps1
 ```
 
-安装脚本生成便携 ZIP 和安装 EXE，检查主程序与 ConPTY 文件是否存在，并生成许可证声明。当前安装器不包含 Explorer 扩展，不覆盖用户默认文件关联，仅添加 C/C++ 文件的“打开方式”。发布包暂未配置签名和自动更新。原版图标资源暂时保留，后续替换品牌图形。
+安装脚本生成便携 ZIP 和安装 EXE，检查主程序、CLI 与 ConPTY 文件是否存在，并生成许可证声明。当前 Zed 的 `util::command` 已为后台进程设置 `CREATE_NO_WINDOW`，因此没有再移植 Wu 的 Agent 进程封装。当前安装器不包含 Explorer 扩展，不覆盖用户默认文件关联，仅添加 C/C++ 文件的“打开方式”。发布包暂未配置签名和自动更新。原版图标资源暂时保留，后续替换品牌图形。
 
 `.github/workflows/lec-editor.yml` 对 Windows 应用、翻译、文件树行为、活动栏和安装器语法进行检查。安装器语法检查使用临时占位文件，不生成可供用户安装的正式应用包。
 

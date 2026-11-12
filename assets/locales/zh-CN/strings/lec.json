@@ -7,5 +7,8 @@
   "Go to Symbol in Project": "转到项目符号",
   "LEC Editor Repository": "LEC Editor 代码仓库",
   "Report a Problem": "反馈问题",
-  "LEC Editor — Settings": "LEC Editor — 设置"
+  "LEC Editor — Settings": "LEC Editor — 设置",
+  "Welcome back to LEC Editor": "欢迎回到 LEC Editor",
+  "Welcome to LEC Editor": "欢迎使用 LEC Editor",
+  "The interface language. Some views update after you reopen them or restart the editor.": "界面语言。部分界面需要重新打开或重启编辑器后更新。"
 }

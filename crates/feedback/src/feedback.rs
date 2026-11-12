@@ -16,14 +16,14 @@ actions!(
     ]
 );
 
-const ZED_REPO_URL: &str = "https://github.com/zed-industries/zed";
+const ZED_REPO_URL: &str = "https://github.com/lec-org/lec-editor";
 
-const REQUEST_FEATURE_URL: &str = "https://github.com/zed-industries/zed/discussions/new/choose";
+const REQUEST_FEATURE_URL: &str = "https://github.com/lec-org/lec-editor/issues/new";
 
 fn file_bug_report_url(specs: &SystemSpecs) -> String {
     format!(
         concat!(
-            "https://github.com/zed-industries/zed/issues/new",
+            "https://github.com/lec-org/lec-editor/issues/new",
             "?",
             "template=10_bug_report.yml",
             "&",
@@ -102,7 +102,7 @@ pub fn init(cx: &mut App) {
                 cx.spawn_in(window, async move |_, cx| {
                     let specs = specs.await;
                     cx.update(|_, cx| {
-                        cx.open_url(&email_zed_url(&specs));
+                        cx.open_url(&file_bug_report_url(&specs));
                     })
                     .log_err();
                 })

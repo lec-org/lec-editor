@@ -33,7 +33,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
-Name: "simplifiedChinese"; MessagesFile: "messages\Default.zh-cn.isl"
+Name: "simplifiedChinese"; MessagesFile: "{#SourcePath}messages\Default.zh-cn.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; Flags: unchecked
