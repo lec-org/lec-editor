@@ -1,0 +1,45 @@
+version: '1.0'
+name: lec-linux
+displayName: LEC Editor Linux 构建
+triggers:
+  trigger: auto
+  push:
+    branches:
+      precise:
+        - main
+stages:
+  - name: build
+    displayName: 编译与工具链验收
+    trigger: auto
+    strategy: naturally
+    executor:
+      - gitee
+    steps:
+      - step: execute@docker
+        name: linux
+        displayName: 构建 Linux 安装包
+        image: ubuntu:24.04
+        command: |
+          set -eu
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
+          apt-get install -y ca-certificates curl git python3 pkg-config clang-18 lld-18
+          ./script/linux
+          export PATH="$HOME/.cargo/bin:$PATH"
+          rustup show
+          ./script/download-wasi-sdk
+          export PYTHONUTF8=1 CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=2
+          export CARGO_PROFILE_RELEASE_DEBUG=0 CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_DEBUG=0
+          export CC=clang-18 CXX=clang++-18 LLD=/usr/bin/ld.lld-18
+          export ZED_UPDATE_EXPLANATION='LEC 社区构建，请从 https://lec-org.github.io/lec-editor/ 手动下载更新。'
+          python3 script/bundle-lec-unix.py
+          sha256sum dist/lec-editor-linux-*.tar.gz > dist/SHA256SUMS
+        artifacts:
+          - name: LEC_LINUX
+            path:
+              - ./dist
+            type: .tar.gz
+strategy:
+  retry: '0'
+  timeout: 350
+  cloneDepth: 1

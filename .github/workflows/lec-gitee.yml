@@ -2,6 +2,15 @@ name: LEC Gitee 流水线联调
 
 on:
   workflow_dispatch:
+    inputs:
+      operation:
+        description: '查询构建环境、启动 Gitee 构建或读取构建状态'
+        type: choice
+        options: [inspect, build, status]
+        default: inspect
+      build_id:
+        description: '读取状态时填写 Gitee 构建 ID'
+        type: string
 
 permissions:
   contents: read
@@ -11,6 +20,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
@@ -23,17 +35,52 @@ jobs:
           test -n "$GITEE_TOKEN"
           printf '%s' "$GITEE_TOKEN" | gitee auth login --with-token
       - name: 查询现有流水线
+        if: inputs.operation == 'inspect'
         run: gitee pipeline list -R lec-org/lec-editor --ref main --json > "$RUNNER_TEMP/gitee-pipelines.json"
       - name: 查询可用构建插件
+        if: inputs.operation == 'inspect'
         run: gitee pipeline plugin list -R lec-org/lec-editor --json > "$RUNNER_TEMP/gitee-plugins.json"
       - name: 获取官方流水线模板
+        if: inputs.operation == 'inspect'
         run: gitee pipeline example -R lec-org/lec-editor > "$RUNNER_TEMP/gitee-example.yml"
       - name: 查询 Rust 与自定义构建环境
+        if: inputs.operation == 'inspect'
         run: |
           for type in rust-build@v1.0.0 custom-build@v1.0.0 MULTI_STEP@v1.0.0; do
             gitee pipeline plugin scheme -R lec-org/lec-editor --type "$type" --json > "$RUNNER_TEMP/gitee-$type-scheme.json"
             gitee pipeline plugin example -R lec-org/lec-editor --type "$type" > "$RUNNER_TEMP/gitee-$type-example.yml"
           done
+      - name: 同步构建源码到 Gitee
+        if: inputs.operation == 'build'
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          export GITEE_LOGIN="$(gitee api /user | node -e 'let input="";process.stdin.on("data",chunk=>input+=chunk).on("end",()=>{const user=JSON.parse(input);if(!user.login)process.exit(1);process.stdout.write(user.login)})')"
+          test -n "$GITEE_LOGIN"
+          export GIT_ASKPASS="$RUNNER_TEMP/gitee-askpass.sh" GIT_TERMINAL_PROMPT=0
+          cat > "$GIT_ASKPASS" <<'SH'
+          #!/bin/sh
+          case "$1" in
+            *Username*) printf '%s\n' "$GITEE_LOGIN" ;;
+            *Password*) printf '%s\n' "$GITEE_TOKEN" ;;
+            *) exit 1 ;;
+          esac
+          SH
+          chmod 700 "$GIT_ASKPASS"
+          git -c credential.helper= push https://gitee.com/lec-org/lec-editor.git HEAD:refs/heads/main
+      - name: 启动 Gitee Linux 构建
+        if: inputs.operation == 'build'
+        run: |
+          gitee pipeline run -R lec-org/lec-editor --ref main --file lec-linux.yml --json > "$RUNNER_TEMP/gitee-build.json"
+          node -e 'const build=require(process.env.RUNNER_TEMP+"/gitee-build.json"); console.log(JSON.stringify({id:build.id,status:build.status,message:build.message}))'
+      - name: 读取 Gitee 构建状态
+        if: inputs.operation == 'status'
+        env:
+          BUILD_ID: ${{ inputs.build_id }}
+        run: |
+          [[ "$BUILD_ID" =~ ^[0-9]+$ ]]
+          gitee pipeline build view "$BUILD_ID" -R lec-org/lec-editor --json > "$RUNNER_TEMP/gitee-build.json"
+          node -e 'const build=require(process.env.RUNNER_TEMP+"/gitee-build.json"); console.log(JSON.stringify({id:build.id,status:build.status,message:build.message,stages:build.stages}))'
       - name: 保存接口验证结果
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -45,5 +92,6 @@ jobs:
             ${{ runner.temp }}/gitee-example.yml
             ${{ runner.temp }}/gitee-*-scheme.json
             ${{ runner.temp }}/gitee-*-example.yml
+            ${{ runner.temp }}/gitee-build.json
           if-no-files-found: ignore
           retention-days: 7
