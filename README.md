@@ -1,63 +1,50 @@
 > [!IMPORTANT]
 > Remove this line to confirm you've reviewed this PR before submitting.
 
-[LEC Editor 官网](https://lec-org.github.io/lec-editor/) · [发行记录](https://github.com/lec-org/lec-editor/releases)
-
 # LEC Editor
 
-LEC Editor is a C/C++ editor fork of Zed. It keeps the existing file and folder workflow and aims to bundle compilation, execution, and a small supported library catalog.
+LEC Editor 是面向大一新生的极简中文 C/C++ 编辑器，基于 Zed，参考 Wu 的功能裁剪与中文化实现，围绕“打开文件、编写代码、运行程序”提供清晰的学习流程。
 
-Current status: based on Zed `v1.28.1` on `lec-editor-baseline`. The first adaptation adds a reduced application surface, Wu-based Chinese localization, file-tree feedback and a separate Windows identity. See [implementation and validation](docs/lec/IMPLEMENTATION.md) and [Wu provenance](docs/lec/THIRD_PARTY.md). Bundled C/C++ compilation, execution and library management are still pending. The installation links below refer to upstream Zed, not an LEC Editor release.
+[产品官网](https://lec-org.github.io/lec-editor/) · [发行记录](https://github.com/lec-org/lec-editor/releases) · [Gitee 镜像](https://gitee.com/lec-org/lec-editor)
 
-See [the pinned upstream baseline](./UPSTREAM.md) and [the first-stage scope and Wu review](./docs/lec/README.md).
+## 当前能力
 
----
+- 默认简体中文，可切换英语或跟随系统语言。
+- 保留文件树、标签页、搜索、代码轮廓和终端，精简无关入口。
+- 打开当前 C/C++ 文件，按 **F5** 或点击编辑区右上角的**运行**，自动保存、编译并在终端运行。
+- 终端支持 `scanf`、`std::cin` 等交互输入，可用 **Ctrl+C** 中断程序。
+- 编译失败时不会运行上一次的旧程序；每次运行使用独立临时目录。
+- Windows 应用、安装目录和用户数据使用独立的 LEC 标识。
 
-# Zed
+## 使用说明
 
-[![Zed](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/zed-industries/zed/main/assets/badge/v0.json)](https://zed.dev)
-[![CI](https://github.com/zed-industries/zed/actions/workflows/run_tests.yml/badge.svg)](https://github.com/zed-industries/zed/actions/workflows/run_tests.yml)
+1. 新建或打开 `.c`、`.cpp`、`.cc`、`.cxx` 文件。
+2. 编写代码，点击**运行**或按 **F5**。部分 Mac 键盘需使用 **Fn+F5**。
+3. 在底部终端查看结果、输入数据，或用 **Ctrl+C** 停止运行。
 
-Welcome to Zed, a high-performance, multiplayer code editor from the creators of [Atom](https://github.com/atom/atom) and [Tree-sitter](https://github.com/tree-sitter/tree-sitter).
+当前运行入口编译单个源文件，使用 C17 / C++17。程序的工作目录为源文件所在目录。首次运行未保存的文件时会显示保存对话框，取消保存则不运行。
 
----
+**当前尚未随包提供编译器。** 需要本机已有 Clang 或 GCC，并可从 PATH 查找到。暂未提供正式安装包；多源文件构建、第三方库管理和调试仍待完善。
 
-### Installation
+## 本地构建
 
-On macOS, Linux, and Windows you can [download Zed directly](https://zed.dev/download) or install Zed via your local package manager ([macOS](https://zed.dev/docs/installation#macos)/[Linux](https://zed.dev/docs/linux#installing-via-a-package-manager)/[Windows](https://zed.dev/docs/windows#package-managers)).
+需要 Rust `1.98.1`。macOS 还需要 Xcode Command Line Tools 和 CMake：
 
-Other platforms are not yet available:
+```sh
+cargo +1.98.1 build --locked -p zed --bin leceditor -p c_runner --bin lec-run --features gpui_platform/runtime_shaders
+./target/debug/leceditor
+```
 
-- Web ([tracking discussion](https://github.com/zed-industries/zed/discussions/26195))
+Windows 需要 Visual Studio C++ Build Tools、Windows SDK、PowerShell 7 和 Inno Setup 6。在具备 MSVC 环境的终端中执行：
 
-### Developing Zed
+```powershell
+./script/bundle-lec-windows.ps1
+```
 
-- [Building Zed for macOS](./docs/src/development/macos.md)
-- [Building Zed for Linux](./docs/src/development/linux.md)
-- [Building Zed for Windows](./docs/src/development/windows.md)
+构建与验收范围见[实施记录](docs/lec/IMPLEMENTATION.md)。
 
-### Contributing
+## 开源说明
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for ways you can contribute to Zed.
+LEC Editor 固定基于 Zed `v1.28.1`，保留上游版权声明与许可证。主体代码使用 GPL-3.0-or-later，部分组件使用 Apache-2.0；导入 Wu 的代码及来源记录见[第三方说明](docs/lec/THIRD_PARTY.md)。
 
-Also... we're hiring! Check out our [jobs](https://zed.dev/jobs) page for open roles.
-
-### Licensing
-
-Zed source code is licensed primarily under GPL-3.0-or-later, with Apache-2.0 components where marked.
-
-License information for third party dependencies must be correctly provided for CI to pass.
-
-We use [`cargo-about`](https://github.com/EmbarkStudios/cargo-about) to automatically comply with open source licenses. If CI is failing, check the following:
-
-- Is it showing a `no license specified` error for a crate you've created? If so, add `publish = false` under `[package]` in your crate's Cargo.toml.
-- Is the error `failed to satisfy license requirements` for a dependency? If so, first determine what license the project has and whether this system is sufficient to comply with this license's requirements. If you're unsure, ask a lawyer. Once you've verified that this system is acceptable add the license's SPDX identifier to the `accepted` array in `script/licenses/zed-licenses.toml`.
-- Is `cargo-about` unable to find the license for a dependency? If so, add a clarification field at the end of `script/licenses/zed-licenses.toml`, as specified in the [cargo-about book](https://embarkstudios.github.io/cargo-about/cli/generate/config.html#crate-configuration).
-
-## Sponsorship
-
-Zed is developed by **Zed Industries, Inc.**, a for-profit company.
-
-If you’d like to financially support the project, you can do so via GitHub Sponsors.
-Sponsorships go directly to Zed Industries and are used as general company revenue.
-There are no perks or entitlements associated with sponsorship.
+更多开发约束见[上游基线记录](UPSTREAM.md)与[第一阶段说明](docs/lec/README.md)。
