@@ -8,7 +8,7 @@
 - Development branch: `lec-editor-baseline`
 - License: GPL-3.0-or-later, with Apache-2.0 components where marked. Original license and attribution files are retained.
 
-This is a GitHub fork with a separate desktop application repository. The local `origin` remote points to LEC and `upstream` points to Zed. The fork's inherited `main` branch is separate from the pinned development branch. An inherited branch named `codex` prevents creating `codex/*` branches, so this baseline uses `lec-editor-baseline`.
+本仓库是独立的 LEC Editor 桌面应用仓库，`origin` 指向 LEC，`upstream` 指向 Zed。当前只保留 `main` 和 `lec-editor-baseline`：`main` 已合入基线的完整 LEC 改造，并保留官网与发布配置；`lec-editor-baseline` 保留为固定参考分支。应用代码继续基于 Zed `v1.28.1`，后续升级需显式选择版本并验证。
 
 The initial baseline commit changed only fork documentation. Subsequent LEC changes are recorded in `docs/lec/IMPLEMENTATION.md`; imported Wu sources and their exact commits are recorded in `docs/lec/THIRD_PARTY.md`. Windows runtime acceptance remains separate from automated source and build checks.
 
