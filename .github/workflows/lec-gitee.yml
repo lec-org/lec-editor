@@ -1,0 +1,41 @@
+name: LEC Gitee 流水线联调
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: 安装官方 Gitee CLI
+        run: npm install --global --no-audit --no-fund @gitee/gitee-cli@0.3.3
+      - name: 验证已有凭据
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          test -n "$GITEE_TOKEN"
+          printf '%s' "$GITEE_TOKEN" | gitee auth login --with-token
+      - name: 查询现有流水线
+        run: gitee pipeline list -R lec-org/lec-editor --ref main --json > "$RUNNER_TEMP/gitee-pipelines.json"
+      - name: 查询可用构建插件
+        run: gitee pipeline plugin list -R lec-org/lec-editor --json > "$RUNNER_TEMP/gitee-plugins.json"
+      - name: 获取官方流水线模板
+        run: gitee pipeline example -R lec-org/lec-editor > "$RUNNER_TEMP/gitee-example.yml"
+      - name: 保存接口验证结果
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: lec-gitee-inspect
+          path: |
+            ${{ runner.temp }}/gitee-pipelines.json
+            ${{ runner.temp }}/gitee-plugins.json
+            ${{ runner.temp }}/gitee-example.yml
+          if-no-files-found: ignore
+          retention-days: 7
