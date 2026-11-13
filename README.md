@@ -1,3 +1,8 @@
+> [!IMPORTANT]
+> Remove this line to confirm you've reviewed this PR before submitting.
+
+本仓库维护 LEC Editor 社区构建。访问[下载官网](https://lec-org.github.io/lec-editor/)，或查看[打包与双源发布说明](website/README.md)。编辑器基于 Zed，保留以下上游项目说明与许可证。
+
 # Zed
 
 [![Zed](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/zed-industries/zed/main/assets/badge/v0.json)](https://zed.dev)

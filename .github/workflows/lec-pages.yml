@@ -1,0 +1,57 @@
+name: LEC 官网
+
+on:
+  push:
+    branches: [main]
+    paths: ['website/**', '.github/workflows/lec-pages.yml']
+  workflow_dispatch:
+  workflow_run:
+    workflows: ['LEC 制品发布']
+    types: [completed]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: lec-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          ref: main
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - name: 读取最近发布的 LEC 制品清单
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh release list --repo lec-org/lec-editor --limit 100 --exclude-drafts --exclude-pre-releases --json tagName --jq '[.[] | select(.tagName | startswith("lec-v"))][0].tagName // empty')
+          if [ -n "$tag" ]; then
+            gh release download "$tag" --repo lec-org/lec-editor --pattern downloads.json --dir website/src/data --clobber
+          fi
+      - name: 构建静态官网
+        working-directory: website
+        run: |
+          npm ci
+          npm run build
+      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa
+        with:
+          path: website/dist
+      - name: 部署 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e

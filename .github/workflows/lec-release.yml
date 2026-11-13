@@ -1,0 +1,120 @@
+name: LEC 制品发布
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '发布标签，例如 lec-v1.30.0'
+        required: true
+        default: lec-v1.30.0
+      publish:
+        description: '构建成功后发布到 GitHub 和 Gitee'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lec-release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+env:
+  CARGO_INCREMENTAL: '0'
+  CARGO_BUILD_JOBS: '3'
+  # 托管 Runner 磁盘有限；保留发布优化，减少调试符号占用。
+  CARGO_PROFILE_RELEASE_DEBUG: '0'
+  CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_DEBUG: '0'
+  ZED_UPDATE_EXPLANATION: 'LEC 社区构建，请从 https://lec-org.github.io/lec-editor/ 手动下载更新。'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-26
+            platform: macos-aarch64
+          - os: ubuntu-24.04
+            platform: linux-x86_64
+          - os: windows-2022
+            platform: windows-x86_64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+      - name: 校验标签
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          [[ "$RELEASE_TAG" =~ ^lec-v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]
+          mkdir -p dist
+      - name: 释放 Linux 构建空间
+        if: runner.os == 'Linux'
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h .
+      - name: 安装 Linux 依赖
+        if: runner.os == 'Linux'
+        run: ./script/linux
+      - name: 安装 Rust 工具链
+        shell: bash
+        run: rustup show
+      - name: 下载 WASI SDK
+        shell: bash
+        run: ./script/download-wasi-sdk
+      - name: 构建 macOS 安装包
+        if: runner.os == 'macOS'
+        run: |
+          ./script/bundle-mac aarch64-apple-darwin
+          cp target/aarch64-apple-darwin/release/Zed-aarch64.dmg dist/lec-editor-macos-aarch64.dmg
+      - name: 构建 Linux 安装包
+        if: runner.os == 'Linux'
+        env:
+          CC: clang-18
+          CXX: clang++-18
+          LLD: /usr/bin/ld.lld-18
+        run: |
+          ./script/bundle-linux --skip-sentry
+          cp target/release/zed-linux-x86_64.tar.gz dist/lec-editor-linux-x86_64.tar.gz
+      - name: 构建 Windows 安装包
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          # 上游 PowerShell 许可脚本在此变量存在时启用 --fail。
+          ALLOW_MISSING_LICENSES: '1'
+        run: |
+          ./script/bundle-windows.ps1 -Architecture x86_64
+          Copy-Item $env:SETUP_PATH dist/lec-editor-windows-x86_64.exe
+      - name: 保存安装包
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: lec-${{ matrix.platform }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    if: inputs.publish
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: lec-*
+          path: dist
+          merge-multiple: true
+      - name: 发布双源制品与校验清单
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: node script/lec-release.mjs "$RELEASE_TAG" dist

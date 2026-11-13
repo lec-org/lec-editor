@@ -1,0 +1,80 @@
+---
+import Container from '../components/Container.astro';
+import Link from '../components/Link.astro';
+import Layout from '../layouts/Layout.astro';
+import downloads from '../data/downloads.json';
+
+type Download = { name: string; size: number; sha256: string; github: string; gitee: { parts: { name: string; size: number; url: string }[]; command: string | null } };
+const files = downloads.files as Download[];
+const platforms = [
+  { name: 'macOS', arch: 'Apple Silicon · ARM64', extension: 'DMG', file: 'lec-editor-macos-aarch64.dmg', icon: '⌘' },
+  { name: 'Windows', arch: 'Intel / AMD · x64', extension: 'EXE', file: 'lec-editor-windows-x86_64.exe', icon: '⊞' },
+  { name: 'Linux', arch: 'Intel / AMD · x64', extension: 'TAR.GZ', file: 'lec-editor-linux-x86_64.tar.gz', icon: '$_' },
+];
+// 发布清单只接受已校验的公开地址，防止异常清单生成危险链接。
+for (const file of files) {
+  if (!/^[a-f0-9]{64}$/.test(file.sha256) || !Number.isSafeInteger(file.size) || file.size <= 0) throw new Error('制品清单校验失败');
+  for (const [url, host] of [[file.github, 'github.com'], ...file.gitee.parts.map(part => [part.url, 'gitee.com'])]) {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:' || parsed.hostname !== host || parsed.username || parsed.password || parsed.search) throw new Error('制品下载地址校验失败');
+  }
+}
+const size = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+---
+
+<Layout title="LEC Editor — 让思路，落成代码">
+  <header>
+    <Container class="nav">
+      <a class="brand" href="#" aria-label="LEC Editor 首页"><span class="brand-mark">&lt;/&gt;</span> LEC <span class="brand-light">Editor</span></a>
+      <nav aria-label="主导航"><a href="#features">编辑体验</a><a href="https://github.com/lec-org/lec-editor">源代码 <span aria-hidden="true">↗</span></a><a class="nav-download" href="#downloads">下载编辑器 <span aria-hidden="true">↓</span></a></nav>
+    </Container>
+  </header>
+  <main id="main">
+    <Container>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="status-dot"></span> OPEN SOURCE. BUILT FOR FOCUS.</p>
+          <h1 id="hero-title">让思路，<br /><span>落成代码。</span></h1>
+          <p class="hero-description">少一点等待，多一点心流。<br />基于 Zed 的高性能编辑器社区构建，<br class="desktop-break" />为 LEC 的日常开发提供一个开源选择。</p>
+          <div class="hero-actions"><Link href="#downloads">下载 LEC Editor <span aria-hidden="true">↓</span></Link><a class="text-link" href="https://github.com/lec-org/lec-editor">在 GitHub 查看源码 <span aria-hidden="true">↗</span></a></div>
+          <p class="hero-note">macOS · Windows · Linux <span> / </span> GitHub & Gitee 双下载源</p>
+        </div>
+        <div class="editor-wrap">
+          <div class="editor" aria-label="编辑器代码布局示意">
+            <div class="editor-titlebar"><span class="traffic"><i></i><i></i><i></i></span><span>lec-workspace</span><span class="title-shortcut">⌘ K</span></div>
+            <div class="editor-body">
+              <aside class="editor-sidebar"><p>PROJECT</p><div>⌄ &nbsp;lec-workspace</div><div class="indent">⌄ &nbsp;src</div><div class="file selected"><b>TS</b> welcome.ts</div><div class="file"><b>TS</b> editor.ts</div><div class="file"><b>#</b> styles.css</div><div class="sidebar-bottom">⑂ &nbsp;main</div></aside>
+              <div class="editor-content"><div class="editor-tab"><b>TS</b> welcome.ts <span>×</span></div><div class="breadcrumbs">src <span>›</span> welcome.ts</div><div class="code-block"><div class="line-numbers" aria-hidden="true">1<br />2<br />3<br />4<br />5<br />6<br />7<br />8<br />9<br />10<br />11<br />12</div><pre><code><span class="code-comment">// 给想法一个开始</span>
+<span class="code-purple">import</span> {'{'} <span class="code-blue">createEditor</span> {'}'} <span class="code-purple">from</span> <span class="code-green">'./editor'</span>;
+
+<span class="code-purple">const</span> workspace = <span class="code-blue">createEditor</span>({'{'}
+  name: <span class="code-green">'LEC Workspace'</span>,
+  language: <span class="code-green">'TypeScript'</span>,
+  focus: <span class="code-orange">true</span>,
+{'}'});
+
+workspace.<span class="code-blue">open</span>();
+
+<span class="code-comment">// 下一行，交给你。</span><span class="cursor"></span></code></pre></div><div class="terminal"><div>TERMINAL <span>PROBLEMS &nbsp; OUTPUT</span></div><p><span>➜</span> &nbsp;lec-workspace <b>git:(main)</b> <span class="terminal-cursor">▍</span></p></div></div>
+            </div><div class="editor-status"><span>⑂ main &nbsp; ✓ 0 &nbsp; ⚠ 0</span><span>UTF-8 &nbsp; TypeScript &nbsp; 4 spaces</span></div>
+          </div><p class="illustration-label">界面示意 · 非运行截图</p>
+        </div>
+      </section>
+      <section class="foundation" aria-label="技术基础"><span>站在开源的肩膀上</span><strong>Zed</strong><span>Rust 构建</span><span>GPUI 原生界面</span><a href="https://github.com/lec-org/lec-editor/blob/main/LICENSE-GPL">开放源代码 <span aria-hidden="true">↗</span></a></section>
+      <section id="features" class="features" aria-labelledby="features-title">
+        <div class="section-heading"><p class="eyebrow">STAY IN THE FLOW</p><h2 id="features-title">开发工具，回归开发本身。</h2><p>沿用 Zed 的编辑基础，把注意力留给手上的项目。</p></div>
+        <div class="feature-grid"><article><span class="feature-number">01 / PERFORMANCE</span><h3>原生性能，跟上思路</h3><p>Rust 与 GPUI 构建的编辑体验。代码导航、搜索与多文件编辑，在同一个工作区里完成。</p></article><article><span class="feature-number">02 / WORKSPACE</span><h3>熟悉的工具，就在手边</h3><p>语言服务、集成终端和 Git 工作流。打开已有项目，继续使用熟悉的开发工具。</p></article><article><span class="feature-number">03 / OPEN SOURCE</span><h3>从源码，到你手中的安装包</h3><p>源码和构建流程公开。GitHub 与 Gitee 提供相同版本的制品，可通过 SHA-256 核对文件完整性。</p></article></div>
+      </section>
+      <section id="downloads" class="downloads" aria-labelledby="download-title">
+        <div class="download-heading"><div><p class="eyebrow">YOUR NEXT WORKSPACE</p><h2 id="download-title">准备好，写下一行。</h2><p>选择你的系统和下载源。</p></div><span class:list={['release-badge', !downloads.tag && 'pending']}><span class="status-dot"></span>{downloads.tag || '首个版本构建中'}</span></div>
+        <div class="platform-grid">{platforms.map(platform => {
+          const file = files.find(file => file.name === platform.file);
+          return <article class="platform"><span class="platform-icon" aria-hidden="true">{platform.icon}</span><div class="platform-title"><h3>{platform.name}</h3><span>{platform.extension}</span></div><p>{platform.arch}</p>{file ? <><span class="file-size">{size(file.size)}</span><Link href={file.github}>从 GitHub 下载 <span aria-hidden="true">↓</span></Link><details class="gitee-download"><summary>从 Gitee 下载 <span aria-hidden="true">↓</span></summary><div class="gitee-parts"><p>{file.gitee.parts.length > 1 ? '受 Gitee 附件大小限制，请下载全部分卷，再按下方命令还原。' : '与 GitHub 相同的安装包。'}</p>{file.gitee.parts.map((part, index) => <a href={part.url}>{file.gitee.parts.length > 1 ? `下载分卷 ${index + 1} / ${file.gitee.parts.length}` : '下载安装包'} <span>↓</span></a>)}{file.gitee.command && <><p>在下载目录执行：</p><pre tabindex="0">{file.gitee.command}</pre></>}</div></details><details class="checksum"><summary>SHA-256 校验值</summary><code>{file.sha256}</code></details></> : <div class="awaiting"><span>安装包构建中</span><a href="https://github.com/lec-org/lec-editor/actions/workflows/lec-release.yml">查看构建进度 ↗</a></div>}</article>;
+        })}</div>
+        <p class="download-notice">这是基于 Zed 的社区构建，安装后的应用名保留为 Zed Dev。首批 macOS 和 Windows 安装包尚未签名；请确认来源后安装。版本更新请回到此页下载。</p>
+        <div class="release-links"><a href="https://github.com/lec-org/lec-editor/releases">GitHub 发行记录 ↗</a><a href="https://gitee.com/lec-org/lec-editor/releases">Gitee 发行记录 ↗</a>{downloads.commit && <a href={`https://github.com/lec-org/lec-editor/tree/${downloads.commit}`}>本版本源码 ↗</a>}</div>
+      </section>
+    </Container>
+  </main>
+  <footer><Container class="footer-inner"><a class="brand" href="#"><span class="brand-mark">&lt;/&gt;</span> LEC <span class="brand-light">Editor</span></a><p>Built on <a href="https://zed.dev">Zed</a>. Made for the LEC community.</p><div><a href="https://github.com/lec-org/lec-editor">源码</a><a href="https://github.com/surjithctly/astroship">基于 Astroship</a></div></Container></footer>
+</Layout>

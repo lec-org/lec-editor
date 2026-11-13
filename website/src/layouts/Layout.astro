@@ -1,0 +1,22 @@
+---
+import '../styles/global.css';
+const { title } = Astro.props;
+const base = import.meta.env.BASE_URL;
+---
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content="LEC Editor 是基于 Zed 的开源社区构建。在这里了解编辑器，并从 GitHub 或 Gitee 下载 macOS、Windows 和 Linux 安装包。" />
+    <meta name="theme-color" content="#f6f7f9" />
+    <link rel="canonical" href={new URL(base + '/', Astro.site)} />
+    <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到正文</a>
+    <slot />
+  </body>
+</html>

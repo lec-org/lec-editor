@@ -1,0 +1,5 @@
+---
+// 基于 Astroship Container，统一页面内容宽度。
+const { class: className } = Astro.props;
+---
+<div class:list={['container', className]}><slot /></div>
