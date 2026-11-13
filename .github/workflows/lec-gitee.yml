@@ -28,6 +28,12 @@ jobs:
         run: gitee pipeline plugin list -R lec-org/lec-editor --json > "$RUNNER_TEMP/gitee-plugins.json"
       - name: 获取官方流水线模板
         run: gitee pipeline example -R lec-org/lec-editor > "$RUNNER_TEMP/gitee-example.yml"
+      - name: 查询 Rust 与自定义构建环境
+        run: |
+          for type in rust-build@v1.0.0 custom-build@v1.0.0 MULTI_STEP@v1.0.0; do
+            gitee pipeline plugin scheme -R lec-org/lec-editor --type "$type" --json > "$RUNNER_TEMP/gitee-$type-scheme.json"
+            gitee pipeline plugin example -R lec-org/lec-editor --type "$type" > "$RUNNER_TEMP/gitee-$type-example.yml"
+          done
       - name: 保存接口验证结果
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -37,5 +43,7 @@ jobs:
             ${{ runner.temp }}/gitee-pipelines.json
             ${{ runner.temp }}/gitee-plugins.json
             ${{ runner.temp }}/gitee-example.yml
+            ${{ runner.temp }}/gitee-*-scheme.json
+            ${{ runner.temp }}/gitee-*-example.yml
           if-no-files-found: ignore
           retention-days: 7
