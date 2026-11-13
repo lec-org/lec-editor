@@ -26,7 +26,7 @@ use std::{
     thread::{self, JoinHandle},
 };
 use tempfile::{NamedTempFile, TempDir};
-use util::paths::{PathWithPosition, parse_path_with_position};
+use util::paths::PathWithPosition;
 use walkdir::WalkDir;
 
 use std::io::IsTerminal;
@@ -128,10 +128,6 @@ struct Args {
     /// Will attempt to give the correct command to run
     #[arg(long)]
     system_specs: bool,
-    /// Print a JSON snapshot of the running Zed's GPUI and platform state
-    /// (windows, displays, frame scheduling, cursor), for debugging.
-    #[arg(long)]
-    debug_state: bool,
     /// Open the project in a dev container.
     ///
     /// Automatically triggers "Reopen in Dev Container" if a `.devcontainer/`
@@ -157,6 +153,53 @@ struct Args {
     /// by having Zed act like netcat communicating over a Unix socket.
     #[arg(long, hide = true)]
     askpass: Option<String>,
+}
+
+/// Parses a path containing a position (e.g. `path:line:column`)
+/// and returns its canonicalized string representation.
+///
+/// If a part of path doesn't exist, it will canonicalize the
+/// existing part and append the non-existing part.
+///
+/// This method must return an absolute path, as many zed
+/// crates assume absolute paths.
+fn parse_path_with_position(argument_str: &str) -> anyhow::Result<String> {
+    match Path::new(argument_str).canonicalize() {
+        Ok(existing_path) => Ok(PathWithPosition::from_path(existing_path)),
+        Err(_) => PathWithPosition::parse_str(argument_str).map_path(|mut path| {
+            let curdir = env::current_dir().context("retrieving current directory")?;
+            let mut children = Vec::new();
+            let root;
+            loop {
+                // canonicalize handles './', and '/'.
+                if let Ok(canonicalized) = fs::canonicalize(&path) {
+                    root = canonicalized;
+                    break;
+                }
+                // The comparison to `curdir` is just a shortcut
+                // since we know it is canonical. The other one
+                // is if `argument_str` is a string that starts
+                // with a name (e.g. "foo/bar").
+                if path == curdir || path == Path::new("") {
+                    root = curdir;
+                    break;
+                }
+                children.push(
+                    path.file_name()
+                        .with_context(|| format!("parsing as path with position {argument_str}"))?
+                        .to_owned(),
+                );
+                if !path.pop() {
+                    unreachable!("parsing as path with position {argument_str}");
+                }
+            }
+            Ok(children.iter().rev().fold(root, |mut path, child| {
+                path.push(child);
+                path
+            }))
+        }),
+    }
+    .map(|path_with_pos| path_with_pos.to_string(&|path| path.to_string_lossy().into_owned()))
 }
 
 /// Returns whether a `--diff` argument refers to an existing path, allowing a
@@ -688,11 +731,7 @@ fn run() -> Result<()> {
                     cwd: env::current_dir().ok(),
                 };
 
-                tx.send(if args.debug_state {
-                    CliRequest::DebugState
-                } else {
-                    open_request
-                })?;
+                tx.send(open_request)?;
 
                 while let Ok(response) = rx.recv() {
                     match response {
@@ -1235,9 +1274,9 @@ mod windows {
                 let cli = std::env::current_exe()?;
                 let dir = cli.parent().context("no parent path for cli")?;
 
-                // ../Zed.exe is the standard, lib/zed is for MSYS2, ./zed.exe is for the target
+                // ../leceditor.exe is the standard, lib/zed is for MSYS2, ./leceditor.exe is for the target
                 // directory in development builds.
-                let possible_locations = ["../Zed.exe", "../lib/zed/zed-editor.exe", "./zed.exe"];
+                let possible_locations = ["../leceditor.exe", "./leceditor.exe"];
                 possible_locations
                     .iter()
                     .find_map(|p| dir.join(p).canonicalize().ok().filter(|path| path != &cli))

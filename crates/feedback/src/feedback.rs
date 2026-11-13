@@ -16,14 +16,14 @@ actions!(
     ]
 );
 
-const ZED_REPO_URL: &str = "https://github.com/zed-industries/zed";
+const ZED_REPO_URL: &str = "https://github.com/lec-org/lec-editor";
 
-const REQUEST_FEATURE_URL: &str = "https://github.com/zed-industries/zed/discussions/new/choose";
+const REQUEST_FEATURE_URL: &str = "https://github.com/lec-org/lec-editor/issues/new";
 
 fn file_bug_report_url(specs: &SystemSpecs) -> String {
     format!(
         concat!(
-            "https://github.com/zed-industries/zed/issues/new",
+            "https://github.com/lec-org/lec-editor/issues/new",
             "?",
             "template=10_bug_report.yml",
             "&",
@@ -33,24 +33,12 @@ fn file_bug_report_url(specs: &SystemSpecs) -> String {
     )
 }
 
-fn email_zed_url(specs: &SystemSpecs) -> String {
-    format!(
-        concat!("mailto:hi@zed.dev", "?", "body={}"),
-        email_body(specs)
-    )
-}
-
-fn email_body(specs: &SystemSpecs) -> String {
-    let body = format!("\n\nSystem Information:\n\n{}", specs);
-    urlencoding::encode(&body).to_string()
-}
-
 pub fn init(cx: &mut App) {
     cx.observe_new(|workspace: &mut Workspace, _, _| {
         workspace
             .register_action(|_, _: &CopySystemSpecsIntoClipboard, window, cx| {
-                let os_name = telemetry::os_name(cx);
-                let specs = SystemSpecs::new(window, cx, os_name, telemetry::os_version());
+                let specs =
+                    SystemSpecs::new(window, cx, telemetry::os_name(), telemetry::os_version());
 
                 cx.spawn_in(window, async move |_, cx| {
                     let specs = specs.await.to_string();
@@ -85,8 +73,8 @@ pub fn init(cx: &mut App) {
                 cx.open_url(REQUEST_FEATURE_URL);
             })
             .register_action(move |_, _: &FileBugReport, window, cx| {
-                let os_name = telemetry::os_name(cx);
-                let specs = SystemSpecs::new(window, cx, os_name, telemetry::os_version());
+                let specs =
+                    SystemSpecs::new(window, cx, telemetry::os_name(), telemetry::os_version());
                 cx.spawn_in(window, async move |_, cx| {
                     let specs = specs.await;
                     cx.update(|_, cx| {
@@ -97,12 +85,12 @@ pub fn init(cx: &mut App) {
                 .detach();
             })
             .register_action(move |_, _: &EmailZed, window, cx| {
-                let os_name = telemetry::os_name(cx);
-                let specs = SystemSpecs::new(window, cx, os_name, telemetry::os_version());
+                let specs =
+                    SystemSpecs::new(window, cx, telemetry::os_name(), telemetry::os_version());
                 cx.spawn_in(window, async move |_, cx| {
                     let specs = specs.await;
                     cx.update(|_, cx| {
-                        cx.open_url(&email_zed_url(&specs));
+                        cx.open_url(&file_bug_report_url(&specs));
                     })
                     .log_err();
                 })

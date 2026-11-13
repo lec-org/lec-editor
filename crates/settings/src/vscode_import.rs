@@ -181,6 +181,7 @@ impl VsCodeSettings {
 
     pub fn settings_content(&self) -> SettingsContent {
         SettingsContent {
+            activity_bar: None,
             agent: self.agent_settings_content(),
             agent_servers: None,
             audio: None,
@@ -203,7 +204,6 @@ impl VsCodeSettings {
             file_finder: None,
             git: self.git_settings_content(),
             git_panel: self.git_panel_settings_content(),
-            git_graph: None,
             global_lsp_settings: skip_default(GlobalLspSettingsContent {
                 semantic_token_rules: self.semantic_token_rules(),
                 ..GlobalLspSettingsContent::default()
@@ -1023,6 +1023,7 @@ impl VsCodeSettings {
     fn theme_settings_content(&self) -> ThemeSettingsContent {
         let (buffer_font_family, buffer_font_fallbacks) = self.read_fonts("editor.fontFamily");
         ThemeSettingsContent {
+            ui_language: None,
             ui_font_size: None,
             ui_font_family: None,
             ui_font_fallbacks: None,

@@ -41,7 +41,7 @@ use crate::{
     git_store::GitStore,
     lsp_store::{SymbolLocation, log_store::LogKind},
     project_search::SearchResultsHandle,
-    trusted_worktrees::{PathTrust, TrustedWorktrees},
+    trusted_worktrees::{PathTrust, RemoteHostLocation, TrustedWorktrees},
     worktree_store::WorktreeIdCounter,
 };
 pub use agent_registry_store::{AgentRegistryStore, RegistryAgent};
@@ -1128,22 +1128,11 @@ impl DirectoryLister {
         project
             .visible_worktrees(cx)
             .next()
-            .map(|worktree| {
-                let worktree = worktree.read(cx);
-                let abs_path = worktree.abs_path();
-                let directory = if worktree.root_entry().is_some_and(|entry| entry.is_file()) {
-                    path_style.parent(&abs_path).unwrap_or(&abs_path)
-                } else {
-                    &abs_path
-                };
-                directory.to_string_lossy().into_owned()
-            })
+            .map(|worktree| worktree.read(cx).abs_path().to_string_lossy().into_owned())
             .or_else(|| std::env::home_dir().map(|dir| dir.to_string_lossy().into_owned()))
-            .map(|mut query| {
-                if !query.ends_with(path_style.separators_ch()) {
-                    query.push_str(path_style.primary_separator());
-                }
-                query
+            .map(|mut s| {
+                s.push_str(path_style.primary_separator());
+                s
             })
             .unwrap_or_else(|| {
                 if path_style.is_windows() {
@@ -1238,9 +1227,10 @@ pub struct DisableAiSettings {
 }
 
 impl settings::Settings for DisableAiSettings {
-    fn from_settings(content: &settings::SettingsContent) -> Self {
+    fn from_settings(_content: &settings::SettingsContent) -> Self {
         Self {
-            disable_ai: content.project.disable_ai.unwrap().0,
+            // This product does not initialize AI services or register their UI.
+            disable_ai: true,
         }
     }
 }
@@ -1526,7 +1516,7 @@ impl Project {
                 (
                     remote.proto_client(),
                     remote.path_style(),
-                    remote.connection_options().identity().into_owned(),
+                    RemoteHostLocation::from(remote.connection_options()),
                 )
             });
             let worktree_store = cx.new(|cx| {
@@ -2640,13 +2630,13 @@ impl Project {
     #[inline]
     pub fn visibility_for_paths(
         &self,
-        paths: &[impl AsRef<Path>],
+        paths: &[PathBuf],
         exclude_sub_dirs: bool,
         cx: &App,
     ) -> Option<bool> {
         paths
             .iter()
-            .filter_map(|path| self.visibility_for_path(path.as_ref(), exclude_sub_dirs, cx))
+            .filter_map(|path| self.visibility_for_path(path, exclude_sub_dirs, cx))
             .max()
     }
 
@@ -2682,10 +2672,10 @@ impl Project {
             .max()
     }
 
-    pub fn visibility_for_subpaths(&self, paths: &[impl AsRef<Path>], cx: &App) -> Option<bool> {
+    pub fn visibility_for_subpaths(&self, paths: &[PathBuf], cx: &App) -> Option<bool> {
         paths
             .iter()
-            .filter_map(|path| self.visibility_for_subpath(path.as_ref(), cx))
+            .filter_map(|path| self.visibility_for_subpath(path, cx))
             .max()
     }
 

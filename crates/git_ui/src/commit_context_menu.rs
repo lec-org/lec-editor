@@ -71,7 +71,8 @@ pub(crate) fn commit_context_menu(
                         sha.to_string(),
                         repository,
                         workspace.clone(),
-                        Default::default(),
+                        None,
+                        None,
                         window,
                         cx,
                     );

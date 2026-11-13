@@ -1,4 +1,6 @@
 {
+  "ui_language": "zh-CN",
+  "activity_bar": { "show": true },
   "$schema": "zed://schemas/settings",
   // The name of the Zed theme to use for the UI.
   //
@@ -618,24 +620,22 @@
   "fullscreen_mode": "native",
   // Titlebar related settings
   "title_bar": {
-    // When to show the title bar: "always" | "never" | "hide_in_full_screen".
-    "show": "always",
     // Whether to show git status indicators on the branch icon in the titlebar.
     "show_branch_status_icon": false,
     // Whether to show the branch name button in the titlebar.
-    "show_branch_name": true,
+    "show_branch_name": false,
     // Whether to show the worktree name button in the titlebar.
     "show_worktree_name": true,
     // Whether to show the project host and name in the titlebar.
     "show_project_items": true,
     // Whether to show onboarding banners in the titlebar.
-    "show_onboarding_banner": true,
+    "show_onboarding_banner": false,
     // Whether to show user picture in the titlebar.
-    "show_user_picture": true,
+    "show_user_picture": false,
     // Whether to show the user menu in the titlebar.
-    "show_user_menu": true,
+    "show_user_menu": false,
     // Whether to show the sign in button in the titlebar.
-    "show_sign_in": true,
+    "show_sign_in": false,
     // Whether to show the menus in the titlebar.
     "show_menus": false,
     // Whether to open the menus in the titlebar on hover.
@@ -760,7 +760,7 @@
     // Whether to show bookmarks in the gutter.
     "bookmarks": true,
     // Whether to show breakpoints in the gutter.
-    "breakpoints": true,
+    "breakpoints": false,
     // Whether to show fold buttons in the gutter.
     "folds": true,
     // Minimum number of characters to reserve space for in the gutter.
@@ -889,7 +889,7 @@
     // Default width of the project panel.
     "default_width": 240,
     // Where to dock the project panel. Can be 'left' or 'right'.
-    "dock": "right",
+    "dock": "left",
     // Spacing between worktree entries in the project panel. Can be 'comfortable' or 'standard'.
     "entry_spacing": "comfortable",
     // Whether to show file icons in the project panel.
@@ -1085,13 +1085,7 @@
     // Default width of the collaboration panel.
     "default_width": 240,
   },
-  "git_graph": {
-    // Show "absolute" or "relative" dates in graph rows.
-    "date_style": "absolute",
-  },
   "git_panel": {
-    // Show "relative" or "absolute" dates in commit history.
-    "date_style": "relative",
     // Whether to show the git panel button in the status bar.
     "button": true,
     // Where to dock the git panel. Can be 'left' or 'right'.
@@ -1320,7 +1314,7 @@
           "create_directory": true,
           "create_thread": true,
           "delete_path": true,
-          "diagnostics": true,
+          "diagnostics": false,
           "edit_file": true,
           "fetch": true,
           "find_path": true,
@@ -1347,7 +1341,7 @@
         "tools": {
           "ask_user": false,
           "create_thread": true,
-          "diagnostics": true,
+          "diagnostics": false,
           "fetch": true,
           "find_path": true,
           "find_references": true,
@@ -1428,12 +1422,6 @@
     //
     // Default: true
     "show_merge_conflict_indicator": true,
-    // Whether to automatically generate a title for Zed Agent threads using the
-    // summary model. When disabled, titles are only created when manually
-    // requested (e.g. via the thread's "Regenerate Thread Title" action).
-    //
-    // Default: true
-    "auto_generate_thread_titles": true,
   },
   // Whether the screen sharing icon is shown in the os status bar.
   "show_call_status_icon": true,
@@ -1623,8 +1611,8 @@
     // Whether to pre-fill the file finder's query with the text selected in the
     // focused item (e.g. an editor or a terminal) when it is opened.
     //
-    // Default: false
-    "prefill_query_from_selection": false,
+    // Default: true
+    "prefill_query_from_selection": true,
   },
   // Whether or not to remove any trailing whitespace from lines of a buffer
   // before saving it.
@@ -1706,8 +1694,7 @@
   //   "extra_two" - same + 2 indent levels
   "soft_wrap_indent": "same",
   // The column at which to soft-wrap lines, for buffers where soft-wrap
-  // is enabled. The `editor::Rewrap` action also wraps to this column by
-  // default, whether or not soft-wrap is enabled.
+  // is enabled.
   "preferred_line_length": 80,
   // Whether to indent lines using tab characters, as opposed to multiple
   // spaces.
@@ -1732,9 +1719,9 @@
   // Control what info is collected by Zed.
   "telemetry": {
     // Send debug info like crash reports.
-    "diagnostics": true,
+    "diagnostics": false,
     // Send anonymized usage data like what languages you're using Zed with.
-    "metrics": true,
+    "metrics": false,
     // Allow sending requests to Anthropic models that cannot be offered with
     // Zero Data Retention
     "anthropic_retention": false,
@@ -1742,10 +1729,10 @@
   // Whether to disable all AI features in Zed.
   //
   // Default: false
-  "disable_ai": false,
+  "disable_ai": true,
   // Automatically update Zed. This setting may be ignored on Linux if
   // installed through a package manager.
-  "auto_update": true,
+  "auto_update": false,
   // How to render LSP `textDocument/documentColor` colors in the editor.
   //
   // Possible values:
@@ -1841,13 +1828,10 @@
   "read_only_files": [],
   // Git gutter behavior configuration.
   "git": {
-    // Format for absolute Git dates: "locale", "iso", or a strftime format
-    // such as "%Y-%m-%d %H:%M". Tooltips and commit views always show absolute dates.
-    "date_format": "locale",
     // Global switch to enable or disable all git integration features.
     // If set to true, disables all git integration features.
     // If set to false, individual git integration features below will be independently enabled or disabled.
-    "disable_git": false,
+    "disable_git": true,
     // Whether to enable git status tracking.
     "enable_status": true,
     // Whether to enable git diff display.
@@ -1865,8 +1849,6 @@
     // Control whether the git blame information is shown for the currently
     // focused line, and where it is rendered.
     "inline_blame": {
-      // Show "relative" or "absolute" dates inline and in the status bar.
-      "date_style": "relative",
       "enabled": true,
       // Sets a delay after which the inline blame information is shown.
       // Delay is restarted with every cursor movement.
@@ -1882,26 +1864,11 @@
       "min_column": 0,
     },
     "blame": {
-      // Show "relative" or "absolute" dates in the blame gutter.
-      "date_style": "relative",
       "show_avatar": true,
     },
     // Control which information is shown in the branch picker.
     "branch_picker": {
-      // Show "relative" or "absolute" dates in the branch picker.
-      "date_style": "relative",
       "show_author_name": true,
-    },
-    // Control which information is shown in the stash picker.
-    "stash_picker": {
-      // Show "relative" or "absolute" dates in the stash picker.
-      "date_style": "relative",
-    },
-    "commit_view": {
-      // Whether newly opened commit views show the full commit description.
-      "expand_description": false,
-      // Whether newly opened commit views expand every changed file.
-      "expand_files": true,
     },
     "file_diff": {
       // Whether newly opened file diffs show the full file instead of changes only.

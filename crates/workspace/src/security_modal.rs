@@ -11,12 +11,12 @@ use gpui::{
     DismissEvent, Entity, EventEmitter, FocusHandle, Focusable, ScrollHandle, Task, WeakEntity,
 };
 
+use i18n::t;
 use project::{
     WorktreeId,
-    trusted_worktrees::{PathTrust, TrustedWorktrees},
+    trusted_worktrees::{PathTrust, RemoteHostLocation, TrustedWorktrees},
     worktree_store::WorktreeStore,
 };
-use remote::RemoteConnectionIdentity;
 use smallvec::SmallVec;
 use theme::ActiveTheme;
 use ui::{
@@ -27,7 +27,7 @@ use ui_input::InputField;
 
 use util::{ResultExt, paths::PathStyle};
 
-use crate::{DismissDecision, ModalView, ToggleWorktreeSecurity, WorkspaceDb};
+use crate::{DismissDecision, ModalView, ToggleWorktreeSecurity};
 
 pub struct SecurityModal {
     restricted_paths: HashMap<WorktreeId, RestrictedPath>,
@@ -35,11 +35,10 @@ pub struct SecurityModal {
     _home_dir_task: Task<()>,
     trust_parents: bool,
     worktree_store: WeakEntity<WorktreeStore>,
-    remote_host: Option<RemoteConnectionIdentity<'static>>,
+    remote_host: Option<RemoteHostLocation>,
     focus_handle: FocusHandle,
     project_list_scroll_handle: ScrollHandle,
     trusted: Option<bool>,
-    restriction_inherited: bool,
     /// Editable trust scope shown inline with the checkbox when a single
     /// project is being prompted for; read-only until the checkbox is ticked.
     trust_path_input: Entity<InputField>,
@@ -49,7 +48,7 @@ pub struct SecurityModal {
 struct RestrictedPath {
     abs_path: Arc<Path>,
     is_file: bool,
-    host: Option<RemoteConnectionIdentity<'static>>,
+    host: Option<RemoteHostLocation>,
 }
 
 impl Focusable for SecurityModal {
@@ -65,20 +64,10 @@ impl ModalView for SecurityModal {
         true
     }
 
-    fn on_before_dismiss(&mut self, _: &mut Window, cx: &mut Context<Self>) -> DismissDecision {
-        if self.restriction_inherited {
-            return DismissDecision::Dismiss(true);
-        }
+    fn on_before_dismiss(&mut self, _: &mut Window, _: &mut Context<Self>) -> DismissDecision {
         match self.trusted {
             Some(false) => {
                 telemetry::event!("Open in Restricted", source = "Worktree Trust Modal");
-                let abs_paths = self
-                    .restricted_paths
-                    .values()
-                    .map(|restricted_path| restricted_path.abs_path.clone())
-                    .collect::<Vec<_>>();
-                WorkspaceDb::global(cx)
-                    .keep_worktrees_restricted(abs_paths, self.remote_host.clone());
                 DismissDecision::Dismiss(true)
             }
             Some(true) => {
@@ -100,9 +89,9 @@ impl Render for SecurityModal {
 
         let restricted_count = self.restricted_paths.len();
         let header_label: SharedString = if restricted_count == 1 {
-            "Unrecognized Project".into()
+            t!("Unrecognized Project")
         } else {
-            format!("Unrecognized Projects ({})", restricted_count).into()
+            t!("Unrecognized Projects ({count})", count = restricted_count)
         };
 
         let path_style = self.path_style(cx);
@@ -123,7 +112,8 @@ impl Render for SecurityModal {
                 this.trust_and_dismiss(cx);
             }))
             .on_action(cx.listener(|security_modal, _: &ToggleWorktreeSecurity, _window, cx| {
-                security_modal.stay_restricted_and_dismiss(cx);
+                security_modal.trusted = Some(false);
+                security_modal.dismiss(cx);
             }))
             .header(
                 v_flex()
@@ -157,14 +147,28 @@ impl Render for SecurityModal {
                                                 } else {
                                                     Some(restricted_path.abs_path.as_ref())
                                                 }?;
-                                                let path = self.shorten_path(abs_path, path_style);
                                                 let label = match &restricted_path.host {
-                                                    Some(remote_host) => format!(
-                                                        "{} ({})",
-                                                        path.display(),
-                                                        remote_host_label(remote_host),
-                                                    ),
-                                                    None => path.display().to_string(),
+                                                    Some(remote_host) => {
+                                                        match &remote_host.user_name {
+                                                            Some(user_name) => format!(
+                                                                "{} ({}@{})",
+                                                                self.shorten_path(abs_path, path_style)
+                                                                    .display(),
+                                                                user_name,
+                                                                remote_host.host_identifier
+                                                            ),
+                                                            None => format!(
+                                                                "{} ({})",
+                                                                self.shorten_path(abs_path, path_style)
+                                                                    .display(),
+                                                                remote_host.host_identifier
+                                                            ),
+                                                        }
+                                                    }
+                                                    None => self
+                                                        .shorten_path(abs_path, path_style)
+                                                        .display()
+                                                        .to_string(),
                                                 };
                                                 Some(
                                                     h_flex()
@@ -187,9 +191,9 @@ impl Render for SecurityModal {
                     .child(
                         v_flex()
                             .child(
-                                Label::new(
-                                    "Untrusted projects are opened in Restricted Mode to protect your system.",
-                                )
+                                Label::new(t!(
+                                    "Untrusted projects are opened in Restricted Mode to protect your system."
+                                ))
                                 .color(Color::Muted),
                             )
                             .child(
@@ -201,10 +205,14 @@ impl Render for SecurityModal {
                     )
                     .child(
                         v_flex()
-                            .child(Label::new("Restricted Mode prevents:").color(Color::Muted))
-                            .child(ListBulletItem::new("Project settings from being applied"))
-                            .child(ListBulletItem::new("Language servers from running"))
-                            .child(ListBulletItem::new("MCP Server integrations from installing")),
+                            .child(
+                                Label::new(t!("Restricted Mode prevents:")).color(Color::Muted),
+                            )
+                            .child(ListBulletItem::new(t!("Project settings from being applied")))
+                            .child(ListBulletItem::new(t!("Language servers from running")))
+                            .child(ListBulletItem::new(t!(
+                                "MCP Server integrations from installing"
+                            ))),
                     )
                     .map(|this| {
                         let Some(trust_label) = trust_label else {
@@ -227,7 +235,7 @@ impl Render for SecurityModal {
                                             "trust-parents",
                                             ToggleState::from(self.trust_parents),
                                         )
-                                        .label("Trust all projects in")
+                                        .label(t!("Trust all projects in"))
                                         .on_click(cx.listener(
                                             |security_modal, state: &ToggleState, _, cx| {
                                                 let trust_parents = state.selected();
@@ -274,7 +282,7 @@ impl Render for SecurityModal {
                     .gap_1()
                     .justify_end()
                     .child(
-                        Button::new("rm", "Stay in Restricted Mode")
+                        Button::new("rm", t!("Stay in Restricted Mode"))
                             .key_binding(
                                 KeyBinding::for_action(
                                     &ToggleWorktreeSecurity,
@@ -283,12 +291,13 @@ impl Render for SecurityModal {
                                 .map(|kb| kb.size(rems_from_px(12_f32))),
                             )
                             .on_click(cx.listener(move |security_modal, _, _, cx| {
-                                security_modal.stay_restricted_and_dismiss(cx);
+                                security_modal.trusted = Some(false);
+                                security_modal.dismiss(cx);
                                 cx.stop_propagation();
                             })),
                     )
                     .child(
-                        Button::new("tc", "Trust and Continue")
+                        Button::new("tc", t!("Trust and Continue"))
                             .style(ButtonStyle::Filled)
                             .layer(ui::ElevationIndex::ModalSurface)
                             .key_binding(
@@ -308,12 +317,12 @@ impl Render for SecurityModal {
 impl SecurityModal {
     pub fn new(
         worktree_store: WeakEntity<WorktreeStore>,
-        remote_host: Option<RemoteConnectionIdentity<'static>>,
+        remote_host: Option<impl Into<RemoteHostLocation>>,
         home_dir_task: Task<Option<PathBuf>>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Self {
-        let trust_path_input = cx.new(|cx| InputField::new(window, cx, "Folder to trust"));
+        let trust_path_input = cx.new(|cx| InputField::new(window, cx, &t!("Folder to trust")));
         let task = cx.spawn(async |this, cx| {
             let home_dir = home_dir_task.await;
             this.update(cx, |this, cx| {
@@ -324,7 +333,7 @@ impl SecurityModal {
         });
         let mut this = Self {
             worktree_store,
-            remote_host,
+            remote_host: remote_host.map(|host| host.into()),
             restricted_paths: HashMap::default(),
             focus_handle: cx.focus_handle(),
             project_list_scroll_handle: ScrollHandle::new(),
@@ -332,7 +341,6 @@ impl SecurityModal {
             home_dir: None,
             _home_dir_task: task,
             trusted: None,
-            restriction_inherited: false,
             trust_path_input,
         };
         this.refresh_restricted_paths(cx);
@@ -355,7 +363,7 @@ impl SecurityModal {
         this
     }
 
-    fn build_trust_label(&self, path_style: PathStyle) -> Option<Cow<'static, str>> {
+    fn build_trust_label(&self, path_style: PathStyle) -> Option<SharedString> {
         let mut has_restricted_files = false;
         let available_parents = self
             .restricted_paths
@@ -369,17 +377,18 @@ impl SecurityModal {
         match available_parents.len() {
             0 => {
                 if has_restricted_files {
-                    Some(Cow::Borrowed("Trust all single files"))
+                    Some(t!("Trust all single files"))
                 } else {
                     None
                 }
             }
-            1 => Some(Cow::Owned(format!(
-                "Trust all projects in the {:} folder",
-                self.shorten_path(available_parents[0], path_style)
+            1 => Some(t!(
+                "Trust all projects in the {folder} folder",
+                folder = self
+                    .shorten_path(available_parents[0], path_style)
                     .display()
-            ))),
-            _ => Some(Cow::Borrowed("Trust all projects in the parent folders")),
+            )),
+            _ => Some(t!("Trust all projects in the parent folders")),
         }
     }
 
@@ -468,16 +477,6 @@ impl SecurityModal {
         cx.emit(DismissEvent);
     }
 
-    pub(crate) fn dismiss_inherited_restriction(&mut self, cx: &mut Context<Self>) {
-        self.restriction_inherited = true;
-        self.dismiss(cx);
-    }
-
-    fn stay_restricted_and_dismiss(&mut self, cx: &mut Context<Self>) {
-        self.trusted = Some(false);
-        self.dismiss(cx);
-    }
-
     /// The sole untrusted, non-file project, when exactly one is being prompted
     /// for. This is the case where the trust scope can be edited (Delta opens
     /// one worktree per thread); with zero or several we keep the static label.
@@ -540,7 +539,7 @@ fn validate_trust_scope(
 ) -> Result<PathBuf, SharedString> {
     let trimmed = typed.trim();
     if trimmed.is_empty() {
-        return Err("Enter a folder to trust".into());
+        return Err(t!("Enter a folder to trust"));
     }
     if home_dir.is_none() && trimmed.starts_with('~') {
         return Err("Home directory not available".into());
@@ -556,49 +555,18 @@ fn validate_trust_scope(
         _ => PathBuf::from(trimmed),
     };
     if !path_style.is_absolute(&expanded) {
-        return Err("Enter an absolute folder path".into());
+        return Err(t!("Enter an absolute folder path"));
     }
 
     if !path_style.starts_with(project, expanded.as_path()) {
-        return Err("Must be a parent folder of the project".into());
+        return Err(t!("Must be a parent folder of the project"));
     }
     Ok(expanded)
-}
-
-fn remote_host_label(remote_host: &RemoteConnectionIdentity<'_>) -> String {
-    let (user, host) = match remote_host {
-        RemoteConnectionIdentity::Ssh {
-            host,
-            username,
-            port,
-        } => (
-            username.as_deref(),
-            match port {
-                Some(port) if host.contains(':') => format!("[{host}]:{port}"),
-                Some(port) => format!("{host}:{port}"),
-                None => host.to_string(),
-            },
-        ),
-        RemoteConnectionIdentity::Wsl { distro_name, user } => {
-            (user.as_deref(), distro_name.to_string())
-        }
-        RemoteConnectionIdentity::Docker {
-            container_id,
-            remote_user,
-        } => (Some(remote_user.as_ref()), container_id.to_string()),
-        #[cfg(any(test, feature = "test-support"))]
-        RemoteConnectionIdentity::Mock { id } => (None, format!("mock-{id}")),
-    };
-    match user {
-        Some(user) => format!("{user}@{host}"),
-        None => host,
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use remote::{RemoteConnectionOptions, SshConnectionOptions};
 
     #[test]
     fn accepts_ancestor_or_equal() {
@@ -713,32 +681,5 @@ mod tests {
             validate_trust_scope("~", project, Some(home), style).unwrap(),
             PathBuf::from("/Users/me"),
         );
-    }
-
-    #[test]
-    fn remote_host_label_matches_ssh_connection_string() {
-        for (host, username, port) in [
-            ("server", Some("user"), Some(2222)),
-            ("server", Some("user"), None),
-            ("server", None, Some(2222)),
-            ("server", None, None),
-            ("::1", Some("user"), Some(2222)),
-            ("::1", None, None),
-            ("127.0.0.1", None, Some(2222)),
-        ] {
-            let options = RemoteConnectionOptions::Ssh(SshConnectionOptions {
-                host: host.into(),
-                username: username.map(String::from),
-                port,
-                ..SshConnectionOptions::default()
-            });
-            let RemoteConnectionOptions::Ssh(ssh_options) = &options else {
-                unreachable!();
-            };
-            assert_eq!(
-                remote_host_label(&options.identity()),
-                ssh_options.connection_string(),
-            );
-        }
     }
 }

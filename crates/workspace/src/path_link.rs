@@ -360,8 +360,7 @@ fn resolve_open_target_internal(
             })
         }
         BackgroundPathChecks::ProjectPathResolution => {
-            let path_style = project.read(cx).path_style(cx);
-            let paths_to_check = project_paths_to_check(&potential_paths, cwd, path_style);
+            let paths_to_check = project_paths_to_check(&potential_paths, cwd);
             cx.spawn(async move |cx| {
                 for mut path_to_check in paths_to_check {
                     let path = path_to_check.path.to_string_lossy();
@@ -523,18 +522,16 @@ fn local_paths_to_check(
 fn project_paths_to_check(
     potential_paths: &[PathWithPosition],
     cwd: Option<&Path>,
-    path_style: PathStyle,
 ) -> Vec<PathWithPosition> {
     cwd.iter()
         .flat_map(|cwd| {
-            potential_paths.iter().filter_map(|path_to_check| {
-                normalize_absolute_candidate(cwd, path_to_check, path_style)
-            })
+            potential_paths
+                .iter()
+                .filter_map(|path_to_check| normalize_absolute_candidate(cwd, path_to_check))
         })
         .chain(potential_paths.iter().filter_map(|path_to_check| {
             let maybe_path = &path_to_check.path;
-            (maybe_path.starts_with("~") || path_style.is_absolute(maybe_path))
-                .then(|| path_to_check.clone())
+            (maybe_path.starts_with("~") || maybe_path.is_absolute()).then(|| path_to_check.clone())
         }))
         .collect()
 }
@@ -542,9 +539,8 @@ fn project_paths_to_check(
 fn normalize_absolute_candidate(
     cwd: &Path,
     path_to_check: &PathWithPosition,
-    path_style: PathStyle,
 ) -> Option<PathWithPosition> {
-    (!path_style.is_absolute(&path_to_check.path)).then(|| {
+    path_to_check.path.is_relative().then(|| {
         normalize_lexically(&cwd.join(&path_to_check.path))
             .ok()
             .map(|path| PathWithPosition {
@@ -553,25 +549,4 @@ fn normalize_absolute_candidate(
                 column: path_to_check.column,
             })
     })?
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_project_paths_to_check_uses_the_project_path_style() {
-        let unix = PathWithPosition::parse_str("/home/user/notes/spec.md:12");
-        let windows = PathWithPosition::parse_str("C:\\Users\\user\\spec.md");
-        let relative = PathWithPosition::parse_str("src/main.rs");
-        let candidates = [unix.clone(), windows.clone(), relative];
-        assert_eq!(
-            project_paths_to_check(&candidates, None, PathStyle::Unix),
-            vec![unix]
-        );
-        assert_eq!(
-            project_paths_to_check(&candidates, None, PathStyle::Windows),
-            vec![windows]
-        );
-    }
 }

@@ -23,11 +23,10 @@ use std::collections::HashMap;
 use anyhow::Result;
 use futures::{FutureExt, StreamExt};
 use gpui::{AppContext, AsyncWindowContext, Context};
-use jupyter_protocol::{
-    ExecutionState, JupyterKernelspec, JupyterMessage, JupyterMessageContent, KernelInfoReply,
-};
-use jupyter_zmq_client::{
+use jupyter_protocol::{JupyterKernelspec, JupyterMessageContent};
+use runtimelib::{
     ClientControlConnection, ClientIoPubConnection, ClientShellConnection, ClientStdinConnection,
+    ExecutionState, JupyterMessage, KernelInfoReply,
 };
 use ui::{Icon, IconName, SharedString};
 use util::rel_path::RelPath;
@@ -130,8 +129,8 @@ pub fn start_kernel_tasks<S: KernelSession + 'static>(
                             .ok();
                     }
                     Err(
-                        ref err @ (jupyter_zmq_client::RuntimeError::ParseError { .. }
-                        | jupyter_zmq_client::RuntimeError::SerdeError(_)),
+                        ref err @ (runtimelib::RuntimeError::ParseError { .. }
+                        | runtimelib::RuntimeError::SerdeError(_)),
                     ) => {
                         let error_detail = format!("Kernel issue on {channel} channel\n\n{err}");
                         log::warn!("kernel: {error_detail}");

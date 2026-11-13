@@ -367,6 +367,14 @@ impl ImageContentElement {
     }
 }
 
+impl IntoElement for ImageContentElement {
+    type Element = Self;
+
+    fn into_element(self) -> Self::Element {
+        self
+    }
+}
+
 impl Element for ImageContentElement {
     type RequestLayoutState = ();
     type PrepaintState = Option<(AnyElement, bool)>;

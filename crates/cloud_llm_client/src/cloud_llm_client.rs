@@ -234,7 +234,6 @@ pub enum CompletionRequestStatus {
         position: usize,
     },
     Started,
-    KeepAlive,
     Failed {
         code: String,
         message: String,

@@ -56,9 +56,8 @@ impl Counter {
     fn load(&self, cx: &mut Context<Self>) -> Task<()> {
         cx.spawn(async move |this, cx| {
             // Simulate loading data (e.g., from disk or network)
-            this.update(cx, |counter, cx| {
+            this.update(cx, |counter, _| {
                 counter.count = 100;
-                cx.notify();
             })
             .ok();
         })
@@ -67,9 +66,8 @@ impl Counter {
     fn reload(&self, cx: &mut Context<Self>) {
         cx.spawn(async move |this, cx| {
             // Simulate reloading data in the background
-            this.update(cx, |counter, cx| {
+            this.update(cx, |counter, _| {
                 counter.count += 50;
-                cx.notify();
             })
             .ok();
         })

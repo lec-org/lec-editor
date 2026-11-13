@@ -1,26 +1,9 @@
 [
   {
-    "context": "Workspace",
-    "use_key_equivalents": true,
-    "bindings": {
-      "cmd-o": null,
-    },
-  },
-  {
     "bindings": {
       "cmd-{": "pane::ActivatePreviousItem",
       "cmd-}": "pane::ActivateNextItem",
-      "cmd-0": "git_panel::ToggleFocus", // overrides `cmd-0` zoom reset
       "shift-escape": null, // Unmap workspace::zoom
-      "cmd-~": "git::Branch",
-      "ctrl-f2": "debugger::Stop",
-      "f6": "debugger::Pause",
-      "f7": "debugger::StepInto",
-      "f8": "debugger::StepOver",
-      "shift-f8": "debugger::StepOut",
-      "f9": "debugger::Continue",
-      "shift-f9": "debugger::Start",
-      "alt-shift-f9": "debugger::Start",
     },
   },
   {
@@ -88,7 +71,6 @@
       "ctrl-space": "editor::ShowCompletions",
       "cmd-j": "editor::Hover",
       "cmd-p": "editor::ShowSignatureHelp",
-      "cmd-\\": "assistant::InlineAssist",
       "ctrl-alt-h": "call_hierarchy::ShowIncomingCalls",
     },
   },
@@ -103,12 +85,6 @@
     "context": "BufferSearchBar && !in_replace > Editor",
     "bindings": {
       "shift-enter": "search::SelectPreviousMatch",
-    },
-  },
-  {
-    "context": "AcpThreadSearchBar > Editor",
-    "bindings": {
-      "shift-enter": "agent::SelectPreviousThreadMatch",
     },
   },
   {
@@ -133,7 +109,6 @@
       "shift-f10": "task::Spawn",
       "cmd-f5": "task::Rerun",
       "cmd-e": "file_finder::Toggle",
-      "cmd-k": "git_panel::FocusEditor",
       "cmd-shift-o": "file_finder::Toggle",
       "cmd-shift-n": "file_finder::Toggle",
       "cmd-n": "project_symbols::Toggle",
@@ -142,7 +117,6 @@
       "cmd-alt-o": "project_symbols::Toggle", // JetBrains: Go to Symbol
       "cmd-o": "project_symbols::Toggle", // JetBrains: Go to Class
       "cmd-1": "project_panel::ToggleFocus",
-      "cmd-5": "debug_panel::ToggleFocus",
       "cmd-6": "diagnostics::Deploy",
       "cmd-7": "outline_panel::ToggleFocus",
     },
@@ -154,19 +128,16 @@
       "cmd-2": null, // Bookmarks (left dock)
       "cmd-3": null, // Find Panel (bottom dock)
       "cmd-4": null, // Run Panel (bottom dock)
-      "cmd-5": "debug_panel::ToggleFocus",
       "cmd-6": "diagnostics::Deploy",
       "cmd-7": "outline_panel::ToggleFocus",
       "cmd-8": null, // Services (bottom dock)
       "cmd-9": null, // Git History (bottom dock)
-      "cmd-0": "git_panel::ToggleFocus",
     },
   },
   {
     "context": "Workspace || Editor",
     "bindings": {
       "alt-f12": "terminal_panel::Toggle",
-      "cmd-shift-k": "git::Push",
     },
   },
   {
@@ -214,7 +185,6 @@
     "context": "AgentPanel",
     "bindings": {
       "cmd-alt-l": null,
-      "shift-alt-l": "agent::OpenRulesLibrary",
     },
   },
   {

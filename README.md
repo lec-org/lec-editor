@@ -1,7 +1,17 @@
 > [!IMPORTANT]
 > Remove this line to confirm you've reviewed this PR before submitting.
 
-本仓库维护 LEC Editor 社区构建。访问[下载官网](https://lec-org.github.io/lec-editor/)，或查看[打包与双源发布说明](website/README.md)。编辑器基于 Zed，保留以下上游项目说明与许可证。
+[LEC Editor 官网](https://lec-org.github.io/lec-editor/) · [发行记录](https://github.com/lec-org/lec-editor/releases)
+
+# LEC Editor
+
+LEC Editor is a C/C++ editor fork of Zed. It keeps the existing file and folder workflow and aims to bundle compilation, execution, and a small supported library catalog.
+
+Current status: based on Zed `v1.28.1` on `lec-editor-baseline`. The first adaptation adds a reduced application surface, Wu-based Chinese localization, file-tree feedback and a separate Windows identity. See [implementation and validation](docs/lec/IMPLEMENTATION.md) and [Wu provenance](docs/lec/THIRD_PARTY.md). Bundled C/C++ compilation, execution and library management are still pending. The installation links below refer to upstream Zed, not an LEC Editor release.
+
+See [the pinned upstream baseline](./UPSTREAM.md) and [the first-stage scope and Wu review](./docs/lec/README.md).
+
+---
 
 # Zed
 

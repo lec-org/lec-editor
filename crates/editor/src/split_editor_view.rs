@@ -261,6 +261,14 @@ struct SplitBufferHeadersPrepaintState {
     non_sticky_headers: Vec<BufferHeaderLayout>,
 }
 
+impl IntoElement for SplitBufferHeadersElement {
+    type Element = Self;
+
+    fn into_element(self) -> Self::Element {
+        self
+    }
+}
+
 impl Element for SplitBufferHeadersElement {
     type RequestLayoutState = ();
     type PrepaintState = SplitBufferHeadersPrepaintState;

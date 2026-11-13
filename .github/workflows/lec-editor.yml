@@ -1,0 +1,63 @@
+name: LEC Editor
+
+on:
+  push:
+    branches: [lec-editor-baseline]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lec-editor-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  c-runner:
+    runs-on: ubuntu-latest
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        run: rustup toolchain install 1.98.1 --profile minimal
+      - name: Test C and C++ compilation and execution
+        run: cargo +1.98.1 test --locked -p c_runner
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        shell: pwsh
+        run: |
+          rustup toolchain install 1.98.1 --profile minimal
+          rustup override set 1.98.1
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: lec-windows
+          cache-on-failure: true
+      - name: Check fork boundaries and translations
+        run: python script/check-lec.py
+      - name: Validate installer syntax and identity
+        shell: pwsh
+        run: |
+          $stage = Join-Path $env:RUNNER_TEMP 'lec-installer-check'
+          New-Item -ItemType Directory -Force $stage | Out-Null
+          Set-Content (Join-Path $stage 'leceditor.exe') 'installer syntax check only'
+          & 'C:/Program Files (x86)/Inno Setup 6/ISCC.exe' "/DSourceDir=$stage" "/DOutputDir=$stage" '/DAppVersion=0.0.0' '/DArchitecture=x86_64' crates/zed/resources/windows/lec-editor.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Test translations
+        run: cargo +1.98.1 test --locked -p i18n
+      - name: Test the Windows runner
+        run: cargo +1.98.1 test --locked -p c_runner --lib
+      - name: Check the Windows application
+        run: cargo +1.98.1 check --locked --keep-going -p zed --bin leceditor
+      - name: Test empty folder behavior
+        run: cargo +1.98.1 test --locked -p project_panel empty_row
+      - name: Test activity bar behavior
+        run: cargo +1.98.1 test --locked -p workspace activity_bar_entries_and_toggle

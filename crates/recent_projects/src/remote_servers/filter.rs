@@ -201,15 +201,15 @@ fn build_server_result(
     }
 }
 
-fn match_options() -> fuzzy_nucleo::StringMatchOptions<'static> {
-    fuzzy_nucleo::StringMatchOptions {
-        length_penalty: fuzzy_nucleo::LengthPenalty::Off,
-        ..Default::default()
-    }
-}
-
 pub(super) fn run_sync(data: &FilterData, query: &str) -> Vec<FilteredServer> {
-    let matches = fuzzy_nucleo::match_strings(&data.candidates, query, match_options());
+    let case = fuzzy_nucleo::Case::smart_if_uppercase_in(query);
+    let matches = fuzzy_nucleo::match_strings(
+        &data.candidates,
+        query,
+        case,
+        fuzzy_nucleo::LengthPenalty::Off,
+        data.candidates.len(),
+    );
     let mut results = build_filter_results(matches, data);
     results.sort_by(|a, b| b.score.total_cmp(&a.score));
     results
@@ -221,13 +221,14 @@ pub(super) async fn run_async(
     cancel: &AtomicBool,
     executor: BackgroundExecutor,
 ) -> Option<Vec<FilteredServer>> {
+    let case = fuzzy_nucleo::Case::smart_if_uppercase_in(query);
     let matches = fuzzy_nucleo::match_strings_async(
         &data.candidates,
         query,
-        fuzzy_nucleo::StringMatchOptions {
-            cancel_flag: Some(cancel),
-            ..match_options()
-        },
+        case,
+        fuzzy_nucleo::LengthPenalty::Off,
+        data.candidates.len(),
+        cancel,
         executor,
     )
     .await;

@@ -731,7 +731,7 @@ impl WindowTextSystem {
         let mut process_line = |line_text: SharedString, line_start, line_end| {
             font_runs.clear();
 
-            let mut decoration_runs = <Vec<DecorationRun>>::new();
+            let mut decoration_runs = <Vec<DecorationRun>>::with_capacity(32);
             let mut run_start = line_start;
             while run_start < line_end {
                 let Some(run) = runs.peek_mut() else {
@@ -849,26 +849,13 @@ impl WindowTextSystem {
     /// Subsets of the line can be styled independently with the `runs` parameter.
     /// Generally, you should prefer to use [`Self::shape_line`] instead, which
     /// can be painted directly.
-    pub fn layout_line<Text>(
+    pub fn layout_line(
         &self,
-        text: Text,
+        text: &str,
         font_size: Pixels,
         runs: &[TextRun],
         force_width: Option<Pixels>,
-    ) -> Arc<LineLayout>
-    where
-        Text: AsRef<str>,
-        SharedString: From<Text>,
-    {
-        let font_runs = self.font_runs(runs);
-        let layout = self
-            .line_layout_cache
-            .layout_line(text, font_size, &font_runs, force_width);
-        self.font_runs_buffer.set(font_runs);
-        layout
-    }
-
-    fn font_runs(&self, runs: &[TextRun]) -> Vec<FontRun> {
+    ) -> Arc<LineLayout> {
         let mut last_run = None::<&TextRun>;
         let mut font_runs = self.font_runs_buffer.take();
         font_runs.clear();
@@ -901,7 +888,16 @@ impl WindowTextSystem {
             }
         }
 
-        font_runs
+        let layout = self.line_layout_cache.layout_line(
+            &SharedString::new(text),
+            font_size,
+            &font_runs,
+            force_width,
+        );
+
+        self.font_runs_buffer.set(font_runs);
+
+        layout
     }
 
     /// Returns the shaped layout width of for the given character, in the given font and size.

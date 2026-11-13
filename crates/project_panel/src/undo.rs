@@ -136,8 +136,10 @@ use client::{ErrorCode, ErrorExt as _, RpcError};
 use fs::{TrashId, TrashRestoreError};
 use futures::channel::mpsc;
 use gpui::{
-    AppContext, AsyncApp, IntoElement, PromptLevel, SharedString, Styled, Task, WeakEntity,
+    AppContext, AsyncApp, IntoElement, PromptButton, PromptLevel, SharedString, Styled, Task,
+    WeakEntity,
 };
+use i18n::t;
 use markdown::{Markdown, MarkdownElement};
 use project::Project;
 use project::{ProjectPath, WorktreeId};
@@ -429,13 +431,13 @@ enum UndoMessage {
 }
 
 impl UndoMessage {
-    fn error_title(&self) -> &'static str {
+    fn error_title(&self) -> SharedString {
         match self {
-            UndoMessage::Changed(_) => {
-                "this is a bug in the manage_undo_and_redo task please report"
-            }
-            UndoMessage::Undo => "Undo Failed",
-            UndoMessage::Redo => "Redo Failed",
+            UndoMessage::Changed(_) => SharedString::new_static(
+                "this is a bug in the manage_undo_and_redo task please report",
+            ),
+            UndoMessage::Undo => t!("Undo Failed"),
+            UndoMessage::Redo => t!("Redo Failed"),
         }
     }
 }
@@ -661,11 +663,7 @@ impl Inner {
         // and moving files and directories, we'll assume that, if both paths
         // share the parent folder, then it was a simple rename, otherwise it
         // was a move.
-        let operation = if from.path.parent() == to.path.parent() {
-            "rename"
-        } else {
-            "move"
-        };
+        let is_rename = from.path.parent() == to.path.parent();
 
         let res: Result<Task<Result<CreatedEntry>>> = workspace.update(cx, |workspace, cx| {
             workspace.project().update(cx, |project, cx| {
@@ -673,7 +671,17 @@ impl Inner {
                     .entry_for_path(from, cx)
                     .map(|entry| entry.id)
                     .with_context(|| {
-                        format!("Failed to {operation} `{from_name}`. It no longer exists.")
+                        if is_rename {
+                            t!(
+                                "Failed to rename `{name}`. It no longer exists.",
+                                name = from_name
+                            )
+                        } else {
+                            t!(
+                                "Failed to move `{name}`. It no longer exists.",
+                                name = from_name
+                            )
+                        }
                     })?;
 
                 Ok(project.rename_entry(entry_id, to.clone(), cx))
@@ -682,9 +690,20 @@ impl Inner {
 
         res?.await.map_err(|err| {
             if already_exists_error(&err) {
-                anyhow!(
-                    "Failed to {operation} `{from_name}` to `{to_name}`. A file or folder already exists there."
-                )
+                let message = if is_rename {
+                    t!(
+                        "Failed to rename `{from}` to `{to}`. A file or folder already exists there.",
+                        from = from_name,
+                        to = to_name
+                    )
+                } else {
+                    t!(
+                        "Failed to move `{from}` to `{to}`. A file or folder already exists there.",
+                        from = from_name,
+                        to = to_name
+                    )
+                };
+                anyhow!(message)
             } else {
                 err
             }
@@ -851,7 +870,7 @@ impl Inner {
                     project_path_display(project, &project_path, path_style, cx)
                 }))
             })
-            .unwrap_or_else(|| "item".to_string());
+            .unwrap_or_else(|| t!("item").to_string());
 
         workspace
             .update(cx, |workspace, cx| {
@@ -861,10 +880,14 @@ impl Inner {
             })
             .await
             .map_err(|err| match err.downcast_ref::<TrashRestoreError>() {
-                Some(TrashRestoreError::Collision { .. }) => anyhow!(
-                    "Failed to restore `{name}`. Something already exists at its original location."
-                ),
-                _ => anyhow!("Failed to restore `{name}`. It may have been permanently deleted."),
+                Some(TrashRestoreError::Collision { .. }) => anyhow!(t!(
+                    "Failed to restore `{name}`. Something already exists at its original location.",
+                    name = name
+                )),
+                _ => anyhow!(t!(
+                    "Failed to restore `{name}`. It may have been permanently deleted.",
+                    name = name
+                )),
             })
     }
 
@@ -995,8 +1018,11 @@ impl Inner {
                 window.prompt(
                     PromptLevel::Info,
                     &prompt.message,
-                    prompt.detail,
-                    &[prompt.confirmation_label, "Cancel"],
+                    Some(&prompt.detail),
+                    &[
+                        PromptButton::new(prompt.confirmation_label),
+                        PromptButton::cancel(t!("Cancel")),
+                    ],
                     cx,
                 )
             })?

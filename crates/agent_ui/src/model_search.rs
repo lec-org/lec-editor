@@ -1,7 +1,7 @@
 use std::cmp::Reverse;
 
 use collections::HashSet;
-use fuzzy_nucleo::{Case, StringMatchCandidate, StringMatchOptions};
+use fuzzy_nucleo::StringMatchCandidate;
 use gpui::BackgroundExecutor;
 use ordered_float::OrderedFloat;
 
@@ -41,23 +41,24 @@ async fn match_names_with_metadata(
     query: &str,
     executor: BackgroundExecutor,
 ) -> Vec<usize> {
+    let cancel_flag = Default::default();
     let (mut name_matches, mut metadata_matches) = futures::join!(
         fuzzy_nucleo::match_strings_async(
             names,
             query,
-            StringMatchOptions {
-                case: Case::Ignore,
-                ..Default::default()
-            },
+            fuzzy_nucleo::Case::Ignore,
+            fuzzy_nucleo::LengthPenalty::On,
+            names.len(),
+            &cancel_flag,
             executor.clone(),
         ),
         fuzzy_nucleo::match_strings_async(
             candidates,
             query,
-            StringMatchOptions {
-                case: Case::Ignore,
-                ..Default::default()
-            },
+            fuzzy_nucleo::Case::Ignore,
+            fuzzy_nucleo::LengthPenalty::On,
+            candidates.len(),
+            &cancel_flag,
             executor,
         ),
     );

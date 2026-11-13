@@ -1,0 +1,19 @@
+[package]
+name = "c_runner"
+version = "0.1.0"
+edition.workspace = true
+publish.workspace = true
+license = "GPL-3.0-or-later"
+
+[lib]
+path = "src/c_runner.rs"
+
+[[bin]]
+name = "lec-run"
+path = "src/main.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+dunce.workspace = true

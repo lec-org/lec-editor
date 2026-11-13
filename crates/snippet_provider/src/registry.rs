@@ -1,10 +1,7 @@
-use std::{
-    path::{Path, PathBuf},
-    sync::Arc,
-};
+use std::{path::Path, sync::Arc};
 
 use anyhow::Result;
-use collections::{HashMap, IndexMap};
+use collections::HashMap;
 use gpui::{App, Global, ReadGlobal, UpdateGlobal};
 use parking_lot::RwLock;
 use util::ResultExt;
@@ -17,7 +14,7 @@ impl Global for GlobalSnippetRegistry {}
 
 #[derive(Default)]
 pub struct SnippetRegistry {
-    snippets: RwLock<HashMap<SnippetKind, IndexMap<PathBuf, Vec<Arc<Snippet>>>>>,
+    snippets: RwLock<HashMap<SnippetKind, Vec<Arc<Snippet>>>>,
 }
 
 impl SnippetRegistry {
@@ -46,26 +43,20 @@ impl SnippetRegistry {
         let kind = file_path
             .file_stem()
             .and_then(|stem| stem.to_str().and_then(file_stem_to_key));
-        let new_snippets = crate::file_to_snippets(snippets_in_file, file_path)
-            .filter_map(Result::log_err)
-            .collect();
+        let new_snippets =
+            crate::file_to_snippets(snippets_in_file, file_path).filter_map(Result::log_err);
 
         self.snippets
             .write()
             .entry(kind)
             .or_default()
-            .insert(file_path.to_path_buf(), new_snippets);
+            .extend(new_snippets);
 
         Ok(())
     }
 
     pub fn get_snippets(&self, kind: &SnippetKind) -> Vec<Arc<Snippet>> {
-        self.snippets
-            .read()
-            .get(kind)
-            .into_iter()
-            .flat_map(|snippets_by_file| snippets_by_file.values().flatten().cloned())
-            .collect()
+        self.snippets.read().get(kind).cloned().unwrap_or_default()
     }
 }
 
@@ -95,13 +86,13 @@ mod tests {
         let registry = SnippetRegistry::new();
         registry
             .register_snippets(
-                Path::new("first_extension/ruby.json"),
+                Path::new("ruby.json"),
                 r#"{"Snippet One": {"prefix": "one", "body": "snippet_one"}}"#,
             )
             .unwrap();
         registry
             .register_snippets(
-                Path::new("second_extension/ruby.json"),
+                Path::new("ruby.json"),
                 r#"{"Snippet Two": {"prefix": "two", "body": "snippet_two"}}"#,
             )
             .unwrap();
@@ -118,37 +109,14 @@ mod tests {
     }
 
     #[test]
-    fn test_register_snippets_same_file_replaces_previous_contents() -> Result<()> {
-        let registry = SnippetRegistry::new();
-        let file_path = Path::new("extension/snippets/ruby.json");
-        registry.register_snippets(
-            file_path,
-            r#"{"Hello": {"prefix": "hello", "body": "Hello ${1:world}"}}"#,
-        )?;
-        registry.register_snippets(
-            file_path,
-            r#"{"Hello": {"prefix": "hello", "body": "Hello ${1:Zed}"}}"#,
-        )?;
-
-        let snippets = registry.get_snippets(&Some("ruby".to_owned()));
-        assert_eq!(
-            snippets.len(),
-            1,
-            "Registering the same file again should replace its snippets"
-        );
-        assert_eq!(snippets[0].body, "Hello ${1:Zed}");
-        Ok(())
-    }
-
-    #[test]
     fn test_register_snippets_same_first_prefix_preserved() -> Result<()> {
         let registry = SnippetRegistry::new();
         registry.register_snippets(
-            Path::new("first_extension/ruby.json"),
+            Path::new("ruby.json"),
             r#"{"For Loop": {"prefix": "for", "body": "for ${1:i} in ${2:iter} do\n$0\nend"}}"#,
         )?;
         registry.register_snippets(
-            Path::new("second_extension/ruby.json"),
+            Path::new("ruby.json"),
             r#"{"Different Name": {"prefix": "for", "body": "${2:iter}.each do |${1:item}|\n$0\nend"}}"#,
         )?;
 
@@ -169,11 +137,11 @@ mod tests {
     fn test_register_snippets_same_first_prefix_with_extra_prefixes_preserved() -> Result<()> {
         let registry = SnippetRegistry::new();
         registry.register_snippets(
-            Path::new("first_extension/ruby.json"),
+            Path::new("ruby.json"),
             r#"{"For Loop": {"prefix": "for", "body": "for ${1:i} in ${2:iter} do\n$0\nend"}}"#,
         )?;
         registry.register_snippets(
-            Path::new("second_extension/ruby.json"),
+            Path::new("ruby.json"),
             r#"{"For Loop Alt": {"prefix": ["for", "floop"], "body": "${2:iter}.each do |${1:item}|\n$0\nend"}}"#,
         )?;
 
@@ -198,13 +166,13 @@ mod tests {
         let registry = SnippetRegistry::new();
         registry
             .register_snippets(
-                Path::new("first_extension/ruby.json"),
+                Path::new("ruby.json"),
                 r#"{"For Loop": {"prefix": "for", "body": "for ${1:i} in ${2:iter} do\n$0\nend"}}"#,
             )
             .unwrap();
         registry
             .register_snippets(
-                Path::new("second_extension/ruby.json"),
+                Path::new("ruby.json"),
                 r#"{"While Loop": {"prefix": "while", "body": "while ${1:cond}\n$0\nend"}}"#,
             )
             .unwrap();

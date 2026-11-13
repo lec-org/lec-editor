@@ -5,8 +5,8 @@ use call::{ActiveCall, Room};
 use channel::ChannelStore;
 use client::{User, proto::PeerId};
 use gpui::{
-    AnyElement, Empty, Hsla, IntoElement, MouseButton, PathBuilder, ScreenCaptureSource, Styled,
-    TaskExt, WeakEntity, canvas, point,
+    AnyElement, Empty, Hsla, IntoElement, MouseButton, Path, ScreenCaptureSource, Styled, TaskExt,
+    WeakEntity, canvas, point,
 };
 use gpui::{App, Task, Window};
 use icons::IconName;
@@ -123,21 +123,18 @@ fn render_color_ribbon(color: Hsla) -> impl Element {
             let height = bounds.size.height;
             let horizontal_offset = height;
             let vertical_offset = height / 2.0;
-            let mut builder = PathBuilder::fill();
-            builder.move_to(bounds.bottom_left());
-            builder.curve_to(
+            let mut path = Path::new(bounds.bottom_left());
+            path.curve_to(
                 bounds.origin + point(horizontal_offset, vertical_offset),
                 bounds.origin + point(px(0.0), vertical_offset),
             );
-            builder.line_to(bounds.top_right() + point(-horizontal_offset, vertical_offset));
-            builder.curve_to(
+            path.line_to(bounds.top_right() + point(-horizontal_offset, vertical_offset));
+            path.curve_to(
                 bounds.bottom_right(),
                 bounds.top_right() + point(px(0.0), vertical_offset),
             );
-            builder.close();
-            if let Ok(path) = builder.build() {
-                window.paint_path(path, color);
-            }
+            path.line_to(bounds.bottom_left());
+            window.paint_path(path, color);
         },
     )
     .h_1()

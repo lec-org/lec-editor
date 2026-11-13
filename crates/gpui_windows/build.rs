@@ -33,9 +33,9 @@ mod shader_compilation {
         // Define all modules
         let modules = [
             "quad",
-            "opaque_quad",
             "shadow",
-            "path_tile",
+            "path_rasterization",
+            "path_sprite",
             "underline",
             "monochrome_sprite",
             "subpixel_sprite",
@@ -50,6 +50,18 @@ mod shader_compilation {
         for module in modules {
             compile_shader_for_module(
                 module,
+                &out_dir,
+                &fxc_path,
+                shader_path.to_str().unwrap(),
+                &rust_binding_path,
+            );
+        }
+
+        {
+            let shader_path = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap())
+                .join("src/color_text_raster.hlsl");
+            compile_shader_for_module(
+                "emoji_rasterization",
                 &out_dir,
                 &fxc_path,
                 shader_path.to_str().unwrap(),

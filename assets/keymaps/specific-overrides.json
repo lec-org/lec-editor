@@ -7,6 +7,11 @@
 // keymaps, giving it the highest precedence of all the bindings set by us.
 [
   {
+    // LEC: F5 saves, compiles, and runs the current C/C++ file in every base keymap.
+    "context": "Workspace",
+    "bindings": { "f5": "zed::RunCurrentFile" },
+  },
+  {
     "context": "Picker > Editor",
     "bindings": {
       "ctrl-shift-a": "picker::ToggleActionsMenu",
