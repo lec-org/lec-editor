@@ -14,6 +14,7 @@ LEC Editor 是面向大一新生的极简中文 C/C++ 编辑器，基于 Zed，�
 - 打开当前 C/C++ 文件，按 **F5** 或点击编辑区右上角的**运行**，自动保存、编译并在终端运行。
 - 终端支持 `scanf`、`std::cin` 等交互输入，可用 **Ctrl+C** 中断程序。
 - 编译失败时不会运行上一次的旧程序；每次运行使用独立临时目录。
+- 支持下载和切换配色主题、文件图标主题；其他类型扩展暂不开放。
 - Windows 应用、安装目录和用户数据使用独立的 LEC 标识。
 
 ## 使用说明
@@ -24,7 +25,9 @@ LEC Editor 是面向大一新生的极简中文 C/C++ 编辑器，基于 Zed，�
 
 当前运行入口编译单个源文件，使用 C17 / C++17。程序的工作目录为源文件所在目录。首次运行未保存的文件时会显示保存对话框，取消保存则不运行。
 
-**当前尚未随包提供编译器。** 需要本机已有 Clang 或 GCC，并可从 PATH 查找到。暂未提供正式安装包；多源文件构建、第三方库管理和调试仍待完善。
+macOS、Windows、Linux 的 LEC 打包流程均附带固定版本的 C/C++ 工具链，安装后不需要额外下载编译器或配置系统 PATH。工具链使用 Zig 提供的 Clang、标准库和链接器，优先于系统编译器。
+
+目前尚未发布正式安装包。直接从源码执行 `cargo build` 不会自动下载工具链，可使用本机 Clang/GCC，或按下面的命令准备内置工具链。多源文件构建、第三方库管理和调试仍待完善。
 
 ## 本地构建
 
@@ -35,7 +38,16 @@ cargo +1.98.1 build --locked -p zed --bin leceditor -p c_runner --bin lec-run --
 ./target/debug/leceditor
 ```
 
-Windows 需要 Visual Studio C++ Build Tools、Windows SDK、PowerShell 7 和 Inno Setup 6。在具备 MSVC 环境的终端中执行：
+若要验证不依赖本机编译器的开发构建，在 Apple Silicon Mac 上执行：
+
+```sh
+python3 script/lec-toolchain.py install aarch64-macos target/debug/toolchains/zig
+python3 script/lec-toolchain.py check target/debug/lec-run
+```
+
+macOS / Linux 正式打包使用 Python 3.12 或更新版本，执行 `python3 script/bundle-lec-unix.py`。打包时下载并校验工具链，生成 macOS DMG 或 Linux TAR.GZ。构建机器仍需要各平台的开发依赖；内置工具链供学生编译 C/C++ 使用。
+
+Windows 需要 Visual Studio C++ Build Tools、Windows SDK、Python 3.12 或更新版本、PowerShell 7 和 Inno Setup 6。在具备 MSVC 环境的终端中执行：
 
 ```powershell
 ./script/bundle-lec-windows.ps1

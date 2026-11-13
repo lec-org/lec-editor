@@ -4,6 +4,7 @@ use cloud_api_types::{ExtensionApiManifest, ExtensionMetadata, ExtensionProvides
 use extension::{ExtensionManifest, SchemaVersion};
 use extension_host::{ExtensionOperation, ExtensionStatus, ExtensionStore};
 use gpui::{Anchor, ElementId, Entity, Point, SharedString, prelude::*};
+use i18n::t;
 use release_channel::ReleaseChannel;
 use ui::{Chip, ContextMenu, PopoverMenu, Tooltip, prelude::*, utils::format_number_with_commas};
 
@@ -192,7 +193,7 @@ impl ExtensionCard {
     fn uninstall_button(extension_id: &Arc<str>, is_dev: bool) -> Button {
         Button::new(
             Self::button_id(extension_id, ExtensionOperation::Remove),
-            "Uninstall",
+            t!("Uninstall"),
         )
         .on_click({
             let extension_id = extension_id.clone();
@@ -215,7 +216,7 @@ impl ExtensionCard {
     ) -> Button {
         Button::new(
             SharedString::from(format!("configure-{extension_id}")),
-            "Configure",
+            t!("Configure"),
         )
         .on_click({
             let extension_id = extension_id.clone();
@@ -246,7 +247,7 @@ impl ExtensionCard {
         let rebuild = is_dev.then(|| {
             Button::new(
                 SharedString::from(format!("rebuild-{}", extension.id)),
-                "Rebuild",
+                t!("Rebuild"),
             )
             .color(Color::Accent)
             .disabled(Self::disables_actions(status))
@@ -286,7 +287,7 @@ impl ExtensionCard {
     fn install_button(extension_id: &Arc<str>) -> Button {
         Button::new(
             Self::button_id(extension_id, ExtensionOperation::Install),
-            "Install",
+            t!("Install"),
         )
         .style(ButtonStyle::Tinted(ui::TintColor::Accent))
         .start_icon(
@@ -339,7 +340,7 @@ impl ExtensionCard {
                 let upgrade = matches!(status, ExtensionStatus::Upgrading).then(|| {
                     Button::new(
                         Self::button_id(&extension.id, ExtensionOperation::Upgrade),
-                        "Upgrade",
+                        t!("Upgrade"),
                     )
                     .disabled(Self::disables_actions(status))
                 });
@@ -360,7 +361,7 @@ impl ExtensionCard {
                     );
                     Button::new(
                         Self::button_id(&extension.id, ExtensionOperation::Upgrade),
-                        "Upgrade",
+                        t!("Upgrade"),
                     )
                     .style(ButtonStyle::Tinted(ui::TintColor::Accent))
                     .when(!is_compatible, |button| {
@@ -368,9 +369,7 @@ impl ExtensionCard {
                             let version = extension.manifest.version.clone();
                             move |_, cx| {
                                 Tooltip::simple(
-                                    format!(
-                                        "v{version} is not compatible with this version of Zed."
-                                    ),
+                                    t!("v{version} is not compatible with this version of LEC Editor.", version = version),
                                     cx,
                                 )
                             }
@@ -426,8 +425,8 @@ fn provided_feature_labels(
 
 pub(crate) fn extension_provides_label(provides: ExtensionProvides) -> &'static str {
     match provides {
-        ExtensionProvides::Themes => "Themes",
-        ExtensionProvides::IconThemes => "Icon Themes",
+        ExtensionProvides::Themes => "配色主题",
+        ExtensionProvides::IconThemes => "图标主题",
         ExtensionProvides::Languages => "Languages",
         ExtensionProvides::Grammars => "Grammars",
         ExtensionProvides::LanguageServers => "Language Servers",
@@ -643,22 +642,27 @@ impl RenderOnce for ExtensionCard {
                                 .child(Headline::new(name).size(HeadlineSize::Small))
                                 .child(
                                     Headline::new(if is_dev {
-                                        format!("v{version} (dev)")
+                                        t!("v{version} (dev)", version = version)
                                     } else {
-                                        format!("v{version}")
+                                        format!("v{version}").into()
                                     })
                                     .size(HeadlineSize::XSmall)
                                     .color(Color::Muted),
                                 )
                                 .children(installed_version.map(|installed_version| {
-                                    Headline::new(format!("(v{installed_version} installed)"))
-                                        .size(HeadlineSize::XSmall)
+                                    Headline::new(t!(
+                                        "(v{installed_version} installed)",
+                                        installed_version = installed_version
+                                    ))
+                                    .size(HeadlineSize::XSmall)
                                 }))
                                 .when(!provided_features.is_empty(), |parent| {
                                     parent.child(
-                                        h_flex()
-                                            .gap_1()
-                                            .children(provided_features.into_iter().map(Chip::new)),
+                                        h_flex().gap_1().children(
+                                            provided_features
+                                                .into_iter()
+                                                .map(|feature| Chip::new(i18n::translate(feature))),
+                                        ),
                                     )
                                 }),
                         )
@@ -680,9 +684,9 @@ impl RenderOnce for ExtensionCard {
                                 .truncate()
                         }))
                         .children(download_count.map(|download_count| {
-                            Label::new(format!(
-                                "Downloads: {}",
-                                format_number_with_commas(u128::from(download_count))
+                            Label::new(t!(
+                                "Downloads: {count}",
+                                count = format_number_with_commas(u128::from(download_count))
                             ))
                             .size(LabelSize::Small)
                         })),
@@ -719,7 +723,7 @@ impl RenderOnce for ExtensionCard {
                                             .icon_size(IconSize::Small)
                                             .tooltip(move |_, cx| {
                                                 Tooltip::with_meta(
-                                                    "Visit Extension Repository",
+                                                    t!("Visit Extension Repository"),
                                                     None,
                                                     repository_url_for_tooltip.clone(),
                                                     cx,
@@ -768,7 +772,7 @@ impl RenderOnce for ExtensionCard {
                             .size_full()
                             .justify_center()
                             .bg(cx.theme().colors().elevated_surface_background.alpha(0.8))
-                            .child(Label::new("Overridden by dev extension.")),
+                            .child(Label::new(t!("Overridden by dev extension."))),
                     )
                 }),
         )

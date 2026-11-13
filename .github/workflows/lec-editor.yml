@@ -2,7 +2,7 @@ name: LEC Editor
 
 on:
   push:
-    branches: [lec-editor-baseline]
+    branches: [main, lec-editor-baseline]
   pull_request:
   workflow_dispatch:
 
@@ -15,21 +15,43 @@ concurrency:
 
 jobs:
   c-runner:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: x86_64-linux
+          - os: macos-26
+            platform: aarch64-macos
+          - os: windows-2022
+            platform: x86_64-windows
+    runs-on: ${{ matrix.os }}
     env:
-      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 安装 Rust
         run: rustup toolchain install 1.98.1 --profile minimal
-      - name: Test C and C++ compilation and execution
+      - name: 检查工具链脚本
+        run: python -m unittest discover -s script -p 'test_lec_toolchain.py'
+      - name: 构建运行器
+        run: cargo +1.98.1 build --locked -p c_runner --bin lec-run
+      - name: 准备内置工具链
+        run: python script/lec-toolchain.py install ${{ matrix.platform }} target/debug/toolchains/zig
+      - name: 验证无系统编译器的运行环境
+        shell: bash
+        run: python script/lec-toolchain.py check "target/debug/lec-run${{ runner.os == 'Windows' && '.exe' || '' }}"
+      - name: 验证 C/C++ 编译运行
         run: cargo +1.98.1 test --locked -p c_runner
   windows:
     runs-on: windows-2022
     timeout-minutes: 90
     env:
-      CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
-      CARGO_BUILD_JOBS: '2'
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+      CARGO_BUILD_JOBS: "2"
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust

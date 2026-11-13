@@ -75,6 +75,27 @@ pub use extension_settings::ExtensionSettings;
 
 use crate::headless_host::hash_directory_contents;
 
+pub fn is_appearance_extension(extension: &ExtensionMetadata) -> bool {
+    extension.manifest.wasm_api_version.is_none()
+        && !extension.manifest.provides.is_empty()
+        && extension.manifest.provides.iter().all(|provides| {
+            matches!(
+                provides,
+                ExtensionProvides::Themes | ExtensionProvides::IconThemes
+            )
+        })
+}
+
+async fn load_appearance_manifest(fs: Arc<dyn Fs>, directory: &Path) -> Result<ExtensionManifest> {
+    let mut manifest = ExtensionManifest::load(fs.clone(), directory).await?;
+    manifest.populate_defaults(directory, fs.clone()).await?;
+    // 安装包和本地目录都要检查，不能只相信市场分类或清单省略的字段。
+    if !manifest.is_appearance_only() || fs.is_file(&directory.join("extension.wasm")).await {
+        bail!("LEC Editor 仅支持纯配色主题和图标主题扩展。");
+    }
+    Ok(manifest)
+}
+
 pub const RELOAD_DEBOUNCE_DURATION: Duration = Duration::from_millis(200);
 const FS_WATCH_LATENCY: Duration = Duration::from_millis(100);
 pub(crate) const REMOTE_SYNC_RETRY_DELAY: Duration = Duration::from_secs(1);
@@ -210,6 +231,7 @@ pub enum Event {
     ExtensionInstalled(Arc<str>),
     ExtensionUninstalled(Arc<str>),
     ExtensionFailedToLoad(Arc<str>),
+    ExtensionInstallationFailed(String),
 }
 
 impl EventEmitter<Event> for ExtensionStore {}
@@ -840,9 +862,10 @@ impl ExtensionStore {
 
             let mut response: GetExtensionsResponse = serde_json::from_slice(&body)?;
 
-            response
-                .data
-                .retain(|extension| !SUPPRESSED_EXTENSIONS.contains(extension.id.as_ref()));
+            response.data.retain(|extension| {
+                !SUPPRESSED_EXTENSIONS.contains(extension.id.as_ref())
+                    && is_appearance_extension(extension)
+            });
 
             Ok(response.data)
         })
@@ -863,8 +886,11 @@ impl ExtensionStore {
         extension_id: Arc<str>,
         url: Url,
         operation: ExtensionOperation,
+        version: Option<Arc<str>>,
         cx: &mut Context<Self>,
     ) -> Task<Result<()>> {
+        let metadata = self.fetch_extension_versions(&extension_id, cx);
+        let release_channel = ReleaseChannel::global(cx);
         let extension_dir = self.installed_dir.join(extension_id.as_ref());
         let staging_dir = self.staging_dir.clone();
         let http_client = self.http_client.clone();
@@ -885,90 +911,105 @@ impl ExtensionStore {
                 }
             });
 
-            cx.background_spawn(async move {
-                let mut response = http_client
-                    .get(url.as_ref(), Default::default(), true)
-                    .await
-                    .context("downloading extension")?;
-
-                let content_length = response
-                    .headers()
-                    .get(http_client::http::header::CONTENT_LENGTH)
-                    .and_then(|value| value.to_str().ok()?.parse::<usize>().ok());
-
-                let mut body = BufReader::new(response.body_mut());
-                let mut tar_gz_bytes = Vec::new();
-                body.read_to_end(&mut tar_gz_bytes).await?;
-
-                if let Some(content_length) = content_length {
-                    let actual_len = tar_gz_bytes.len();
-                    if content_length != actual_len {
-                        bail!(
-                            "downloaded extension size {actual_len} \
-                        does not match content length {content_length}"
-                        );
-                    }
+            let result = async {
+                let versions = metadata.await?;
+                if !versions.iter().any(|extension| {
+                    version
+                        .as_ref()
+                        .is_none_or(|version| *version == extension.manifest.version)
+                        && is_version_compatible(release_channel, extension)
+                }) {
+                    bail!("LEC Editor 仅支持下载兼容的纯配色主题和图标主题扩展。");
                 }
+                cx.background_spawn(async move {
+                    let mut response = http_client
+                        .get(url.as_ref(), Default::default(), true)
+                        .await
+                        .context("downloading extension")?;
 
-                let decompressed_bytes = GzipDecoder::new(BufReader::new(tar_gz_bytes.as_slice()));
-                let archive = Archive::new(decompressed_bytes);
+                    let content_length = response
+                        .headers()
+                        .get(http_client::http::header::CONTENT_LENGTH)
+                        .and_then(|value| value.to_str().ok()?.parse::<usize>().ok());
 
-                let remove_dir = || {
-                    fs.remove_dir(
-                        &extension_dir,
-                        RemoveOptions {
-                            recursive: true,
-                            ignore_if_not_exists: true,
-                        },
-                    )
-                };
+                    let mut body = BufReader::new(response.body_mut());
+                    let mut tar_gz_bytes = Vec::new();
+                    body.read_to_end(&mut tar_gz_bytes).await?;
 
-                let temp_dir = fs
-                    .create_dir(&staging_dir)
-                    .await
-                    .and_then(|()| tempfile::tempdir_in(&staging_dir).map_err(Into::into));
+                    if let Some(content_length) = content_length {
+                        let actual_len = tar_gz_bytes.len();
+                        if content_length != actual_len {
+                            bail!(
+                                "downloaded extension size {actual_len} \
+                        does not match content length {content_length}"
+                            );
+                        }
+                    }
 
-                match temp_dir {
-                    Ok(temp_dir) => {
-                        archive.unpack(temp_dir.path()).await?;
-                        remove_dir().await?;
-                        fs.rename(
-                            temp_dir.path(),
+                    let decompressed_bytes =
+                        GzipDecoder::new(BufReader::new(tar_gz_bytes.as_slice()));
+                    let archive = Archive::new(decompressed_bytes);
+
+                    let remove_dir = || {
+                        fs.remove_dir(
                             &extension_dir,
-                            RenameOptions {
-                                overwrite: true,
-                                ignore_if_exists: true,
-                                create_parents: true,
+                            RemoveOptions {
+                                recursive: true,
+                                ignore_if_not_exists: true,
                             },
                         )
-                        .await
-                    }
-                    Err(_) => {
-                        remove_dir().await?;
-                        archive.unpack(extension_dir).await.map_err(Into::into)
-                    }
-                }
-            })
-            .await?;
+                    };
 
-            this.update(cx, |this, cx| this.reload(Some(extension_id.clone()), cx))?
-                .await;
-
-            if let ExtensionOperation::Install = operation {
-                this.update(cx, |this, cx| {
-                    cx.emit(Event::ExtensionInstalled(extension_id.clone()));
-                    if let Some(events) = ExtensionEvents::try_global(cx)
-                        && let Some(manifest) = this.extension_manifest_for_id(&extension_id)
-                    {
-                        events.update(cx, |this, cx| {
-                            this.emit(extension::Event::ExtensionInstalled(manifest.clone()), cx)
-                        });
-                    }
+                    fs.create_dir(&staging_dir).await?;
+                    let temp_dir = tempfile::tempdir_in(&staging_dir)?;
+                    archive.unpack(temp_dir.path()).await?;
+                    load_appearance_manifest(fs.clone(), temp_dir.path()).await?;
+                    remove_dir().await?;
+                    fs.rename(
+                        temp_dir.path(),
+                        &extension_dir,
+                        RenameOptions {
+                            overwrite: true,
+                            ignore_if_exists: true,
+                            create_parents: true,
+                        },
+                    )
+                    .await
                 })
-                .ok();
-            }
+                .await?;
 
-            anyhow::Ok(())
+                this.update(cx, |this, cx| this.reload(Some(extension_id.clone()), cx))?
+                    .await;
+
+                if let ExtensionOperation::Install = operation {
+                    this.update(cx, |this, cx| {
+                        cx.emit(Event::ExtensionInstalled(extension_id.clone()));
+                        if let Some(events) = ExtensionEvents::try_global(cx)
+                            && let Some(manifest) = this.extension_manifest_for_id(&extension_id)
+                        {
+                            events.update(cx, |this, cx| {
+                                this.emit(
+                                    extension::Event::ExtensionInstalled(manifest.clone()),
+                                    cx,
+                                )
+                            });
+                        }
+                    })
+                    .ok();
+                }
+
+                anyhow::Ok(())
+            }
+            .await;
+            if let Err(error) = &result {
+                this.update(cx, |_, cx| {
+                    cx.emit(Event::ExtensionInstallationFailed(format!(
+                        "扩展安装失败：{error:#}"
+                    )));
+                })
+                .log_err();
+            }
+            result
         })
     }
 
@@ -1001,6 +1042,7 @@ impl ExtensionStore {
             extension_id,
             url,
             ExtensionOperation::Install,
+            None,
             cx,
         )
         .detach_and_log_err(cx);
@@ -1034,7 +1076,13 @@ impl ExtensionStore {
             return Task::ready(Ok(()));
         };
 
-        self.install_or_upgrade_extension_at_endpoint(extension_id, url, operation, cx)
+        self.install_or_upgrade_extension_at_endpoint(
+            extension_id,
+            url,
+            operation,
+            Some(version),
+            cx,
+        )
     }
 
     pub fn uninstall_extension(
@@ -1127,7 +1175,7 @@ impl ExtensionStore {
 
         cx.spawn(async move |this, cx| {
             let mut extension_manifest =
-                ExtensionManifest::load(fs.clone(), &extension_source_path).await?;
+                load_appearance_manifest(fs.clone(), &extension_source_path).await?;
             let extension_id = extension_manifest.id.clone();
 
             if let Some(uninstall_task) = this
@@ -1229,7 +1277,7 @@ impl ExtensionStore {
 
         cx.notify();
         let compile = cx.background_spawn(async move {
-            let mut manifest = ExtensionManifest::load(fs.clone(), &path).await?;
+            let mut manifest = load_appearance_manifest(fs.clone(), &path).await?;
             builder
                 .compile_extension(&path, &mut manifest, CompileExtensionOptions::dev(), fs)
                 .await
@@ -1265,6 +1313,18 @@ impl ExtensionStore {
         mut new_index: ExtensionIndex,
         cx: &mut Context<Self>,
     ) -> Task<()> {
+        // 缓存索引也可能来自限制前的版本；停用其他扩展，但保留磁盘文件。
+        new_index
+            .extensions
+            .retain(|_, entry| entry.manifest.is_appearance_only());
+        new_index
+            .themes
+            .retain(|_, entry| new_index.extensions.contains_key(&entry.extension));
+        new_index
+            .icon_themes
+            .retain(|_, entry| new_index.extensions.contains_key(&entry.extension));
+        new_index.languages.clear();
+
         let old_index = &self.extension_index;
 
         let suppressed_extensions_to_remove = new_index
@@ -1807,7 +1867,7 @@ impl ExtensionStore {
         index: &mut ExtensionIndex,
         proxy: Arc<ExtensionHostProxy>,
     ) -> Result<()> {
-        let mut extension_manifest = ExtensionManifest::load(fs.clone(), &extension_dir).await?;
+        let mut extension_manifest = load_appearance_manifest(fs.clone(), &extension_dir).await?;
         let extension_id = extension_manifest.id.clone();
 
         // TODO: distinguish dev extensions more explicitly, by the absence

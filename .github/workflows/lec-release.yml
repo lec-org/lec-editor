@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: '发布标签，例如 lec-v1.30.0'
+        description: "发布标签，例如 lec-v1.28.1"
         required: true
-        default: lec-v1.30.0
+        default: lec-v1.28.1
       publish:
-        description: '构建成功后发布到 GitHub 和 Gitee'
+        description: "构建成功后发布到 GitHub 和 Gitee"
         type: boolean
         default: true
 
@@ -20,12 +20,12 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CARGO_INCREMENTAL: '0'
-  CARGO_BUILD_JOBS: '3'
+  CARGO_INCREMENTAL: "0"
+  CARGO_BUILD_JOBS: "3"
   # 托管 Runner 磁盘有限；保留发布优化，减少调试符号占用。
-  CARGO_PROFILE_RELEASE_DEBUG: '0'
-  CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_DEBUG: '0'
-  ZED_UPDATE_EXPLANATION: 'LEC 社区构建，请从 https://lec-org.github.io/lec-editor/ 手动下载更新。'
+  CARGO_PROFILE_RELEASE_DEBUG: "0"
+  CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_DEBUG: "0"
+  ZED_UPDATE_EXPLANATION: "LEC 社区构建，请从 https://lec-org.github.io/lec-editor/ 手动下载更新。"
 
 jobs:
   validate:
@@ -41,6 +41,7 @@ jobs:
         run: |
           [[ "$RELEASE_TAG" =~ ^lec-v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]
           node --test script/lec-release.test.mjs
+          python3 -m unittest discover -s script -p 'test_lec_toolchain.py'
           if [ "$PUBLISH" = true ]; then
             node --input-type=module <<'JS'
           try {
@@ -73,6 +74,9 @@ jobs:
     timeout-minutes: 350
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: 校验标签
         shell: bash
         env:
@@ -97,8 +101,7 @@ jobs:
       - name: 构建 macOS 安装包
         if: runner.os == 'macOS'
         run: |
-          ./script/bundle-mac aarch64-apple-darwin
-          cp target/aarch64-apple-darwin/release/Zed-aarch64.dmg dist/lec-editor-macos-aarch64.dmg
+          python3 script/bundle-lec-unix.py
       - name: 构建 Linux 安装包
         if: runner.os == 'Linux'
         env:
@@ -106,21 +109,21 @@ jobs:
           CXX: clang++-18
           LLD: /usr/bin/ld.lld-18
         run: |
-          ./script/bundle-linux --skip-sentry
-          cp target/release/zed-linux-x86_64.tar.gz dist/lec-editor-linux-x86_64.tar.gz
+          python3 script/bundle-lec-unix.py
       - name: 构建 Windows 安装包
         if: runner.os == 'Windows'
         shell: pwsh
         env:
-          # 上游 PowerShell 许可脚本在此变量存在时启用 --fail。
-          ALLOW_MISSING_LICENSES: '1'
+          CARGO_NET_GIT_FETCH_WITH_CLI: "true"
         run: |
-          ./script/bundle-windows.ps1 -Architecture x86_64
+          ./script/bundle-lec-windows.ps1 -Architecture x86_64
       - name: 收集 Windows 安装包
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Copy-Item $env:SETUP_PATH dist/lec-editor-windows-x86_64.exe
+          $installers = @(Get-ChildItem target/LECEditor-*-x86_64-Setup.exe)
+          if ($installers.Count -ne 1) { throw '必须生成唯一的 LEC 安装包' }
+          Copy-Item $installers[0].FullName dist/lec-editor-windows-x86_64.exe
       - name: 保存安装包
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:

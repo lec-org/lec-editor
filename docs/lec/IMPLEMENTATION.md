@@ -15,7 +15,11 @@
 
 `lec-run` 是随编辑器提供的独立控制台程序，使用 C17 / C++17、`-Wall -Wextra -g` 编译单个源文件。每次编译使用独立临时目录，编译失败不执行旧程序，正常结束后清理输出；程序工作目录为源文件所在目录。文件路径作为独立参数传递。此入口不读取项目任务配置，也不自动放开项目受限模式。
 
-当前开发版先查找 `lec-run` 同目录下的 `toolchains/bin`，再查找 PATH 中的 Clang/GCC。**尚未随包提供编译器**；缺少编译器时终端会明确提示，因此暂未达到无依赖的开箱即用。多源文件链接、第三方库管理和调试不在本次实现内。Git、调试面板及其默认快捷键和命令入口已收起，保留文件树、搜索、轮廓和终端。
+运行器优先使用 `lec-run` 同目录下的 `toolchains/zig/zig`（Windows 为 `zig.exe`），再查找旧布局 `toolchains/bin` 和 PATH 中的 Clang/GCC。三端 LEC 打包脚本均内置 Zig 0.17.1 的 C/C++ 工具链；直接 `cargo build` 的开发构建仍允许使用系统编译器。多源文件链接、第三方库管理和调试不在本次实现内。Git、调试面板及其默认快捷键和命令入口已收起，保留文件树、搜索、轮廓和终端。
+
+内置工具链显式指定当前架构的编译目标：macOS 使用 `macos.12.0-none`，Linux 使用 `linux-musl`，Windows 使用 `windows-gnu`。头文件、C/C++ 运行库和链接器随工具链提供，无需学生安装 Xcode、MSVC 或 GCC；不修改系统 PATH。仅支持这些工具链提供的标准库和系统接口，不等同于完整平台 SDK 或第三方库环境。
+
+`script/lec-toolchain.json` 固定各平台的官方下载地址和 SHA256，`script/lec-toolchain.py install` 仅在构建阶段下载、校验和解包，保留原始工具链许可证和运行库来源。`check` 命令清空 PATH，使用独立编译缓存和无效的 Xcode/SDK 路径验证中文路径、标准输入、C 数学库、C++ 标准库及异常处理，并确认编译失败后不运行旧程序。所有 LEC 打包脚本都在归档前执行该检查。
 
 ## 依赖边界
 
@@ -25,7 +29,7 @@
 
 ## 构建和检查
 
-Rust 版本为 `1.98.1`。Windows 需要 Visual Studio C++ Build Tools、Windows SDK、PowerShell 7 和 Inno Setup 6，并在具备 MSVC 环境的终端执行：
+Rust 版本为 `1.98.1`。Windows 需要 Visual Studio C++ Build Tools、Windows SDK、Python 3.12 或更新版本、PowerShell 7 和 Inno Setup 6，并在具备 MSVC 环境的终端执行：
 
 ```powershell
 python script/check-lec.py
@@ -52,6 +56,15 @@ python3 script/check-lec.py --actions-json /tmp/lec-actions.json
 
 Debug 版本从源码目录读取资源，启动时可执行文件或工作目录必须位于 checkout 内；复制到临时 `.app` 后也要保留这一条件。上述构建不等同于可分发、签名的 macOS 安装包。
 
+三端正式打包均在构建阶段准备工具链，学生端不需要 Python 或联网下载。macOS / Linux 使用 `python3 script/bundle-lec-unix.py`，Windows 使用 `script/bundle-lec-windows.ps1`。macOS 生成仅本地签名、未经 Apple 公证的 DMG；Linux 生成 TAR.GZ，解压后运行 `lec-editor/bin/leceditor`。源码开发构建可执行以下命令准备并验收内置工具链（Apple Silicon 示例，其他平台名称见锁定清单）：
+
+```sh
+python3 script/lec-toolchain.py install aarch64-macos target/debug/toolchains/zig
+python3 script/lec-toolchain.py check target/debug/lec-run
+```
+
+`.github/workflows/lec-editor.yml` 增加 macOS、Windows、Linux 的内置工具链测试；`.github/workflows/lec-release.yml` 使用 LEC 专用打包脚本，并且只有内置工具链验收通过后才收集安装包。工具链下载失败、摘要不匹配或编译运行失败都会终止打包，不会输出缺少编译器的可发布制品。
+
 ## 验收范围
 
 本地已通过 `git diff --check`、修改文件的 rustfmt 检查，以及 1298 个词条和产品边界检查。[Windows CI](https://github.com/lec-org/lec-editor/actions/runs/43253336241) 已通过锁定依赖的 12 项 i18n 测试、完整应用编译检查、3 项空目录回归测试、1 项活动栏回归测试和安装器语法检查。其后仅清理无用导入及未使用的旧反馈函数、同步自动更新默认值的测试断言，并更新文档；这些清理通过本地格式与产品边界检查。
@@ -61,6 +74,8 @@ Debug 版本从源码目录读取资源，启动时可执行文件或工作目�
 2026-11-13 在 Apple Silicon macOS 上完成完整 Debug 构建和原生窗口启动，实际打开 C 文件，确认语法高亮、中文空目录提示、左侧活动栏和文件树显示。修复了裁剪模块后残留快捷键导致的启动崩溃，并单独恢复原先由协作 UI 初始化的标题栏。全部 20 份内置键位配置通过 JSONC 解析和实际二进制动作注册表核对，产品边界检查也会阻止已裁剪模块的快捷键重新进入默认配置。本次未执行完整上游测试套件。
 
 Wu 导入记录见 [THIRD_PARTY.md](THIRD_PARTY.md)。
+
+2026-11-13 接入三端内置工具链后，本地通过 9 项运行器测试、4 项工具链与打包结构测试、2 项发布脚本测试及产品边界检查。macOS 在中文及空格路径、空 PATH、无效 Xcode/SDK 路径和全新缓存下通过 C/C++ 实际编译运行检查；工具链已放到本机 Debug 运行器旁。另以最小 App 验证图标生成与本地签名命令。打包结构测试使用模拟二进制，不等同于完整编辑器安装验收；Windows / Linux 原生执行、三端完整 Release 构建及安装体验仍待 CI 和实机验证，尚未发布新安装包。
 
 当前文件运行改造已通过 macOS Debug 完整构建、9 项运行工具测试（含真实 C/C++ 编译、标准输入、相对文件访问、中文及特殊字符路径、编译失败、退出码和缺失编译器）、格式检查，以及全部内置键位与实际动作注册表核对。[本次 CI](https://github.com/lec-org/lec-editor/actions/runs/43272002517) 已通过 Linux 真实 C/C++ 编译运行测试、Windows 应用编译检查、运行工具单元测试、翻译与面板回归测试及安装器语法检查。
 

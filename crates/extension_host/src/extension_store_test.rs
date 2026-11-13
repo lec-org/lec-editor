@@ -59,6 +59,118 @@ fn init_logger() {
     zlog::init_test();
 }
 
+#[test]
+fn lec_market_only_lists_appearance_extensions() {
+    for (provides, wasm_api_version, expected) in [
+        (json!(["themes"]), json!(null), true),
+        (json!(["icon-themes"]), json!(null), true),
+        (json!(["themes", "icon-themes"]), json!(null), true),
+        (json!([]), json!(null), false),
+        (json!(["languages"]), json!(null), false),
+        (json!(["themes", "language-servers"]), json!(null), false),
+        (json!(["themes", "snippets"]), json!(null), false),
+        (json!(["themes"]), json!("0.8.0"), false),
+    ] {
+        let metadata = serde_json::from_value(json!({
+            "id": "test", "name": "test", "version": "1.0.0",
+            "description": null, "authors": [], "repository": "https://example.com/theme",
+            "schema_version": 1, "wasm_api_version": wasm_api_version,
+            "provides": provides, "published_at": "2026-11-13T00:00:00Z", "download_count": 0,
+        }))
+        .expect("测试市场数据必须有效");
+        assert_eq!(
+            crate::is_appearance_extension(&metadata),
+            expected,
+            "{provides}"
+        );
+    }
+}
+
+#[gpui::test]
+async fn lec_package_rejects_undeclared_features(executor: BackgroundExecutor) {
+    let fs = FakeFs::new(executor);
+    let manifest = "id = \"test\"\nname = \"test\"\nversion = \"1.0.0\"\nschema_version = 1\nthemes = [\"themes/test.json\"]\n";
+    for (directory, extra, expected) in [
+        ("/pure", json!({}), true),
+        ("/wasm", json!({"extension.wasm": "code"}), false),
+        ("/snippets", json!({"snippets.json": "{}"}), false),
+        (
+            "/language",
+            json!({"languages": {"test": {"config.toml": ""}}}),
+            false,
+        ),
+    ] {
+        fs.insert_tree(directory, json!({"extension.toml": manifest}))
+            .await;
+        fs.insert_tree(directory, extra).await;
+        let result = crate::load_appearance_manifest(fs.clone(), Path::new(directory)).await;
+        assert_eq!(result.is_ok(), expected, "{directory}: {result:?}");
+    }
+    fs.insert_tree(
+        "/icons",
+        json!({"extension.toml": manifest.replace(
+            "themes = [\"themes/test.json\"]", "icon_themes = [\"icon_themes/test.json\"]"
+        )}),
+    )
+    .await;
+    assert!(
+        crate::load_appearance_manifest(fs, Path::new("/icons"))
+            .await
+            .is_ok()
+    );
+}
+
+#[gpui::test]
+async fn lec_disables_non_appearance_extensions_from_cached_index(cx: &mut TestAppContext) {
+    init_test(cx);
+    let fs = FakeFs::new(cx.executor());
+    let blocked = remote_sync_entry("blocked", "[context_servers.test]");
+    let manifest = toml::to_string(&blocked.manifest).expect("测试清单必须有效");
+    let mut index = ExtensionIndex::default();
+    index.extensions.insert("blocked".into(), blocked);
+    index.themes.insert(
+        "旧主题".into(),
+        ExtensionIndexThemeEntry {
+            extension: "blocked".into(),
+            path: "themes/test.json".into(),
+        },
+    );
+    fs.insert_tree(
+        "/extensions/installed/blocked",
+        json!({"extension.toml": manifest}),
+    )
+    .await;
+    fs.insert_tree(
+        "/extensions",
+        json!({"index.json": serde_json::to_string(&index).expect("测试索引必须有效")}),
+    )
+    .await;
+    let http_client = FakeHttpClient::with_200_response();
+    let store = cx.new(|cx| {
+        ExtensionStore::new(
+            PathBuf::from("/extensions"),
+            None,
+            Arc::new(ExtensionHostProxy::new()),
+            fs.clone(),
+            http_client.clone(),
+            http_client,
+            None,
+            NodeRuntime::unavailable(),
+            cx,
+        )
+    });
+    store.read_with(cx, |store, _| {
+        assert!(store.installed_extensions().is_empty());
+        assert!(store.extension_index.themes.is_empty());
+        assert!(store.wasm_extensions.is_empty());
+    });
+    assert!(
+        fs.is_file(Path::new("/extensions/installed/blocked/extension.toml"))
+            .await,
+        "停用扩展不应删除已有文件"
+    );
+}
+
 #[gpui::test]
 async fn test_load_plugin_queries(executor: BackgroundExecutor) {
     let fs = FakeFs::new(executor);

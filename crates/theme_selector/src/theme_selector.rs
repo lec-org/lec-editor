@@ -1,3 +1,4 @@
+use i18n::t;
 mod icon_theme_selector;
 
 use fs::Fs;
@@ -383,7 +384,11 @@ impl PickerDelegate for ThemeSelectorDelegate {
     }
 
     fn placeholder_text(&self, _window: &mut Window, _cx: &mut App) -> Arc<str> {
-        "Select Theme...".into()
+        t!("Select Theme...").to_string().into()
+    }
+
+    fn no_matches_text(&self, _window: &mut Window, _cx: &mut App) -> Option<gpui::SharedString> {
+        Some(t!("No matches"))
     }
 
     fn match_count(&self) -> usize {
@@ -541,7 +546,7 @@ impl PickerDelegate for ThemeSelectorDelegate {
                 .border_t_1()
                 .border_color(cx.theme().colors().border_variant)
                 .child(
-                    Button::new("docs", "View Theme Docs")
+                    Button::new("docs", t!("View Theme Docs"))
                         .end_icon(
                             Icon::new(IconName::ArrowUpRight)
                                 .size(IconSize::Small)
@@ -552,7 +557,7 @@ impl PickerDelegate for ThemeSelectorDelegate {
                         })),
                 )
                 .child(
-                    Button::new("more-themes", "Install Themes").on_click(cx.listener({
+                    Button::new("more-themes", t!("Install Themes")).on_click(cx.listener({
                         move |_, _, window, cx| {
                             window.dispatch_action(
                                 Box::new(Extensions {

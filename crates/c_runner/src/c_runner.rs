@@ -70,10 +70,35 @@ fn find_compiler(language: SourceLanguage, directories: &[PathBuf]) -> Option<Pa
     None
 }
 
+enum Compiler {
+    ClangOrGcc(PathBuf),
+    Zig(PathBuf),
+}
+
+impl Compiler {
+    fn path(&self) -> &Path {
+        match self {
+            Self::ClangOrGcc(path) | Self::Zig(path) => path,
+        }
+    }
+}
+
+fn select_compiler(
+    directory: &Path,
+    language: SourceLanguage,
+    directories: &[PathBuf],
+) -> Option<Compiler> {
+    let zig = directory.join(format!("toolchains/zig/zig{}", env::consts::EXE_SUFFIX));
+    if is_executable(&zig) {
+        return Some(Compiler::Zig(zig));
+    }
+    find_compiler(language, directories).map(Compiler::ClangOrGcc)
+}
+
 pub fn run_file(source: &Path) -> Result<i32, String> {
     let language = SourceLanguage::from_path(source)
         .ok_or_else(|| "请选择一个 .c、.cpp、.cc 或 .cxx 源文件。".to_owned())?;
-    // Keep ordinary Windows paths compatible with compiler command lines.
+    // 避免 Windows 扩展路径前缀影响编译器的命令行解析。
     let source = dunce::canonicalize(source)
         .map_err(|error| format!("无法读取源文件 {}：{error}", source.display()))?;
     let executable = env::current_exe().map_err(|error| error.to_string())?;
@@ -84,9 +109,8 @@ pub fn run_file(source: &Path) -> Result<i32, String> {
     if let Some(path) = env::var_os("PATH") {
         directories.extend(env::split_paths(&path).filter(|path| path.is_absolute()));
     }
-    let compiler = find_compiler(language, &directories).ok_or_else(|| {
-        "未找到 C/C++ 编译器。当前开发版需要系统已安装 Clang 或 GCC；内置工具链尚未随包提供。"
-            .to_owned()
+    let compiler = select_compiler(directory, language, &directories).ok_or_else(|| {
+        "未找到 C/C++ 编译器。请重新安装包含工具链的 LEC Editor；源码开发环境也可以使用 PATH 中的 Clang 或 GCC。".to_owned()
     })?;
     compile_and_run(&source, language, &compiler)
 }
@@ -94,7 +118,7 @@ pub fn run_file(source: &Path) -> Result<i32, String> {
 fn compile_and_run(
     source: &Path,
     language: SourceLanguage,
-    compiler: &Path,
+    compiler: &Compiler,
 ) -> Result<i32, String> {
     let directory = source
         .parent()
@@ -103,7 +127,23 @@ fn compile_and_run(
     let program = output.0.join(format!("program{}", env::consts::EXE_SUFFIX));
 
     println!("正在编译 {}", source.display());
-    let mut command = Command::new(compiler);
+    let mut command = Command::new(compiler.path());
+    if matches!(compiler, Compiler::Zig(_)) {
+        command.arg(match language {
+            SourceLanguage::C => "cc",
+            SourceLanguage::Cpp => "c++",
+        });
+        // 显式目标使用随包头文件、运行库和链接器，避免探测本机 Xcode 或 MSVC。
+        let target = if cfg!(target_os = "macos") {
+            format!("{}-macos.12.0-none", env::consts::ARCH)
+        } else if cfg!(target_os = "windows") {
+            format!("{}-windows-gnu", env::consts::ARCH)
+        } else {
+            format!("{}-linux-musl", env::consts::ARCH)
+        };
+        command.args(["-target", &target]);
+        command.env_remove("ZIG_LIB_DIR").env_remove("ZIG_LIBC");
+    }
     command
         .current_dir(directory)
         .args([language.standard(), "-Wall", "-Wextra", "-g"])
@@ -116,7 +156,7 @@ fn compile_and_run(
     }
     let compilation = command
         .status()
-        .map_err(|error| format!("无法启动编译器 {}：{error}", compiler.display()))?;
+        .map_err(|error| format!("无法启动编译器 {}：{error}", compiler.path().display()))?;
     if !compilation.success() {
         eprintln!("编译失败，请修改上面的错误后重新运行。");
         return Ok(exit_code(compilation));
@@ -125,8 +165,8 @@ fn compile_and_run(
     println!("编译成功，开始运行。\n");
     let mut command = Command::new(&program);
     command.current_dir(directory);
-    // MinGW programs may need runtime DLLs beside the compiler.
-    if let Some(compiler_directory) = compiler.parent() {
+    // 系统 MinGW 编译的程序可能需要编译器目录中的运行库 DLL。
+    if let Some(compiler_directory) = compiler.path().parent() {
         let mut directories = vec![compiler_directory.to_path_buf()];
         if let Some(path) = env::var_os("PATH") {
             directories.extend(env::split_paths(&path));
@@ -245,5 +285,19 @@ mod tests {
             find_compiler(SourceLanguage::C, &[bundled.clone(), system]),
             Some(bundled.join(format!("gcc{}", env::consts::EXE_SUFFIX)))
         );
+        let zig_directory = root.0.join("toolchains/zig");
+        fs::create_dir_all(&zig_directory).expect("内置工具链目录");
+        let zig = zig_directory.join(format!("zig{}", env::consts::EXE_SUFFIX));
+        fs::copy(
+            bundled.join(format!("gcc{}", env::consts::EXE_SUFFIX)),
+            &zig,
+        )
+        .expect("内置 Zig");
+        for language in [SourceLanguage::C, SourceLanguage::Cpp] {
+            assert!(matches!(
+                select_compiler(&root.0, language, &[bundled.clone()]),
+                Some(Compiler::Zig(path)) if path == zig
+            ));
+        }
     }
 }

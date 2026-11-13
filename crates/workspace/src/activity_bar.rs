@@ -1,8 +1,8 @@
 use crate::Workspace;
 use crate::dock::{Dock, PanelHandle, activate_panel_button, panel_button_context_menu};
 use gpui::{
-    Action, Anchor, App, Context, Entity, FocusHandle, IntoElement, ParentElement, Pixels, Render,
-    SharedString, Styled, Subscription, WeakEntity, Window, px,
+    Action, Anchor, App, Context, Entity, FocusHandle, Focusable, IntoElement, ParentElement,
+    Pixels, Render, SharedString, Styled, Subscription, WeakEntity, Window, px,
 };
 use settings::SettingsStore;
 use std::sync::Arc;
@@ -213,7 +213,27 @@ impl Render for ActivityBar {
         for entry in self.entries(window, cx) {
             buttons.push(self.render_entry(entry, window, cx));
         }
-        bar.children(buttons)
+        let workspace = self.workspace.clone();
+        bar.children(buttons).child(div().flex_grow_1()).child(
+            IconButton::new("activity-bar-appearance", IconName::Blocks)
+                .size(ButtonSize::Large)
+                .icon_size(IconSize::Custom(rems_from_px(22_f32)))
+                .tab_index(0isize)
+                .aria_label("主题和图标")
+                .tooltip(Tooltip::text("主题和图标"))
+                .on_click(move |_, window, cx| {
+                    if let Some(workspace) = workspace.upgrade() {
+                        // 从侧栏恢复工作区焦点，让动作进入现有扩展页处理器。
+                        let focus_handle = workspace.read(cx).focus_handle(cx);
+                        activate_panel_button(
+                            &focus_handle,
+                            &zed_actions::Extensions::default(),
+                            window,
+                            cx,
+                        );
+                    }
+                }),
+        )
     }
 }
 
@@ -417,5 +437,23 @@ mod tests {
         let is_open =
             workspace.read_with(cx, |workspace, cx| workspace.left_dock().read(cx).is_open());
         assert!(!is_open, "activating the active entry closes the dock");
+
+        let extension_requests = std::rc::Rc::new(std::cell::Cell::new(0));
+        workspace.update_in(cx, |workspace, _, cx| {
+            let extension_requests = extension_requests.clone();
+            workspace.register_action(move |_, action: &zed_actions::Extensions, _, _| {
+                assert!(action.category_filter.is_none());
+                assert!(action.id.is_none());
+                extension_requests.set(extension_requests.get() + 1);
+            });
+            cx.notify();
+        });
+        cx.run_until_parked();
+        let appearance_button = cx
+            .debug_bounds("ICON-Blocks")
+            .expect("活动栏应显示主题和图标入口");
+        cx.simulate_click(appearance_button.center(), gpui::Modifiers::none());
+        cx.run_until_parked();
+        assert_eq!(extension_requests.get(), 1, "点击后应打开现有扩展页");
     }
 }

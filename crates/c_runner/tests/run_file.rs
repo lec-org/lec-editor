@@ -149,7 +149,12 @@ fn propagates_the_program_exit_code() {
 fn reports_a_missing_compiler() {
     let fixture = Fixture::new();
     let source = fixture.source("main.c", "int main(void) { return 0; }");
-    let output = Command::new(env!("CARGO_BIN_EXE_lec-run"))
+    // 将运行器复制到独立目录，确保测试不受开发构建旁的内置工具链影响。
+    let runner = fixture
+        .0
+        .join(format!("lec-run{}", std::env::consts::EXE_SUFFIX));
+    fs::copy(env!("CARGO_BIN_EXE_lec-run"), &runner).expect("复制独立运行器");
+    let output = Command::new(runner)
         .arg(source)
         .env("PATH", "")
         .output()

@@ -793,7 +793,7 @@ impl TitleBar {
         let display_name = if let Some(ref name) = name {
             util::truncate_and_trailoff(name, MAX_PROJECT_NAME_LENGTH)
         } else {
-            "Open Recent Project".to_string()
+            i18n::t!("Open Recent Project").to_string()
         };
 
         let is_sidebar_open = self
@@ -854,7 +854,11 @@ impl TitleBar {
                     .selected_style(ButtonStyle::Tinted(TintColor::Accent))
                     .when(!is_project_selected, |s| s.color(Color::Muted)),
                 move |_window, cx| {
-                    Tooltip::for_action("Recent Projects", &zed_actions::OpenRecent::default(), cx)
+                    Tooltip::for_action(
+                        i18n::t!("Recent Projects"),
+                        &zed_actions::OpenRecent::default(),
+                        cx,
+                    )
                 },
             )
             .anchor(gpui::Anchor::TopLeft)
@@ -906,7 +910,11 @@ impl TitleBar {
                     .selected_style(ButtonStyle::Tinted(TintColor::Accent))
                     .when(!is_project_selected, |s| s.color(Color::Muted)),
                 move |_window, cx| {
-                    Tooltip::for_action("Recent Projects", &zed_actions::OpenRecent::default(), cx)
+                    Tooltip::for_action(
+                        i18n::t!("Recent Projects"),
+                        &zed_actions::OpenRecent::default(),
+                        cx,
+                    )
                 },
             )
             .anchor(gpui::Anchor::TopLeft)

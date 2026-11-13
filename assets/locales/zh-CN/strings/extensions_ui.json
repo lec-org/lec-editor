@@ -17,6 +17,7 @@
   "Extensions": "扩展",
   "Failed to install dev extension: {error}": "安装开发扩展失败：{error}",
   "Failed to load extensions. Please check your connection and try again.": "无法加载扩展。请检查网络连接后重试。",
+  "Failed to load extensions. Showing installed extensions only.": "无法加载扩展，当前仅显示已安装的扩展。",
   "Go support is built-in to Wu!": "Wu 已内置 Go 支持！",
   "Grammars": "语法",
   "Icon Themes": "图标主题",
@@ -66,5 +67,6 @@
   "Wu supports linking to a source line on GitHub and others.": "Wu 支持链接到 GitHub 等平台上的源代码行。",
   "Yes, install extension": "是，安装扩展",
   "v{version} (dev)": "v{version}（开发版）",
+  "v{version} is not compatible with this version of LEC Editor.": "v{version} 与当前版本的 LEC Editor 不兼容。",
   "v{version} is not compatible with this version of Wu.": "v{version} 与此版本的 Wu 不兼容。"
 }

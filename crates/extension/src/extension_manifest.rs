@@ -127,6 +127,22 @@ pub struct ExtensionManifest {
 }
 
 impl ExtensionManifest {
+    /// LEC 只加载纯外观扩展，避免主题包同时启用其他功能。
+    pub fn is_appearance_only(&self) -> bool {
+        (!self.themes.is_empty() || !self.icon_themes.is_empty())
+            && self.lib == LibManifestEntry::default()
+            && self.languages.is_empty()
+            && self.grammars.is_empty()
+            && self.language_servers.is_empty()
+            && self.context_servers.is_empty()
+            && self.slash_commands.is_empty()
+            && self.snippets.is_none()
+            && self.capabilities.is_empty()
+            && self.debug_adapters.is_empty()
+            && self.debug_locators.is_empty()
+            && self.language_model_providers.is_empty()
+    }
+
     /// Returns the set of features provided by the extension.
     pub fn provides(&self) -> BTreeSet<ExtensionProvides> {
         let mut provides = BTreeSet::default();
@@ -533,6 +549,41 @@ mod tests {
     use crate::ProcessExecCapability;
 
     use super::*;
+
+    #[test]
+    fn lec_only_allows_pure_appearance_extensions() {
+        let empty = extension_manifest();
+        assert!(!empty.is_appearance_only());
+        let mut theme = empty.clone();
+        theme.themes.push(rel_path_buf("themes/test.json"));
+        assert!(theme.is_appearance_only());
+        let mut icons = empty;
+        icons
+            .icon_themes
+            .push(rel_path_buf("icon_themes/test.json"));
+        assert!(icons.is_appearance_only());
+        theme.icon_themes = icons.icon_themes;
+        assert!(theme.is_appearance_only());
+
+        for extra in [
+            "languages = [\"languages/test\"]",
+            "snippets = \"snippets.json\"",
+            "capabilities = [{ kind = \"process:exec\", command = \"*\", args = [] }]",
+            "[lib]\nkind = \"Rust\"",
+            "[grammars.test]\nrepository = \"test\"\nrev = \"main\"",
+            "[language_servers.test]\nlanguages = [\"C\"]",
+            "[context_servers.test]",
+            "[slash_commands.test]\ndescription = \"test\"\nrequires_argument = false",
+            "[debug_adapters.test]",
+            "[debug_locators.test]",
+            "[language_model_providers.test]\nname = \"test\"",
+        ] {
+            let manifest: ExtensionManifest = toml::from_str(&format!(
+                "id = \"test\"\nname = \"test\"\nversion = \"1.0.0\"\nschema_version = 1\nthemes = [\"themes/test.json\"]\n{extra}"
+            )).expect("测试清单必须有效");
+            assert!(!manifest.is_appearance_only(), "不能放开混合扩展：{extra}");
+        }
+    }
 
     fn extension_manifest() -> ExtensionManifest {
         ExtensionManifest {
