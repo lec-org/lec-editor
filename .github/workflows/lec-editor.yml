@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+env:
+  # Windows 重定向日志默认使用西文编码，中文输出需显式使用 UTF-8。
+  PYTHONUTF8: "1"
+
 concurrency:
   group: lec-editor-${{ github.ref }}
   cancel-in-progress: true

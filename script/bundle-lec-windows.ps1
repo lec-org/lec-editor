@@ -33,9 +33,9 @@ try {
     Copy-Item LICENSE-GPL $stage -Force
     Copy-Item docs/lec/THIRD_PARTY.md $stage -Force
     Copy-Item assets/licenses.md $stage -Force
-    python "$PSScriptRoot/lec-toolchain.py" install "$Architecture-windows" "$stage/toolchains/zig"
+    python -X utf8 "$PSScriptRoot/lec-toolchain.py" install "$Architecture-windows" "$stage/toolchains/zig"
     if ($LASTEXITCODE -ne 0) { throw '内置工具链准备失败' }
-    python "$PSScriptRoot/lec-toolchain.py" check "$stage/lec-run.exe"
+    python -X utf8 "$PSScriptRoot/lec-toolchain.py" check "$stage/lec-run.exe"
     if ($LASTEXITCODE -ne 0) { throw '内置工具链验收失败，停止打包' }
     if ($Architecture -eq 'x86_64') {
         $agsArchive = Join-Path $root 'target/lec-ags-6.3.0.zip'

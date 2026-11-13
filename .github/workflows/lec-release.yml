@@ -20,6 +20,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  PYTHONUTF8: "1"
   CARGO_INCREMENTAL: "0"
   CARGO_BUILD_JOBS: "3"
   # 托管 Runner 磁盘有限；保留发布优化，减少调试符号占用。
