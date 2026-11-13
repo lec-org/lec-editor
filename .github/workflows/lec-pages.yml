@@ -6,7 +6,7 @@ on:
     paths: ['website/**', '.github/workflows/lec-pages.yml']
   workflow_dispatch:
   workflow_run:
-    workflows: ['LEC 制品发布']
+    workflows: ['LEC 制品发布', 'LEC 制品上传']
     types: [completed]
 
 permissions:

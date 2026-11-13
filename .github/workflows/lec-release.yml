@@ -132,23 +132,12 @@ jobs:
   publish:
     if: inputs.publish
     needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    uses: ./.github/workflows/lec-publish.yml
     permissions:
       contents: write
-    steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: '24'
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          pattern: lec-*
-          path: dist
-          merge-multiple: true
-      - name: 发布双源制品与校验清单
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
-          RELEASE_TAG: ${{ inputs.tag }}
-        run: node script/lec-release.mjs "$RELEASE_TAG" dist
+      actions: read
+    with:
+      tag: ${{ inputs.tag }}
+      run_id: ${{ github.run_id }}
+    secrets:
+      GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}

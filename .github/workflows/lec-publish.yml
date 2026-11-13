@@ -1,0 +1,73 @@
+name: LEC 制品上传
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+      run_id:
+        required: true
+        type: string
+    secrets:
+      GITEE_TOKEN:
+        required: true
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '发布标签，例如 lec-v1.30.0'
+        required: true
+      run_id:
+        description: '已完成三个平台构建的 LEC 制品发布运行 ID'
+        required: true
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: lec-upload-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          ref: main
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: 核对制品来源
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD_RUN_ID: ${{ inputs.run_id }}
+        run: |
+          [[ "$BUILD_RUN_ID" =~ ^[0-9]+$ ]]
+          gh api "repos/lec-org/lec-editor/actions/runs/$BUILD_RUN_ID" > "$RUNNER_TEMP/lec-build-run.json"
+          node --input-type=module <<'JS'
+          import {readFileSync, appendFileSync} from 'node:fs';
+          import assert from 'node:assert/strict';
+          const run = JSON.parse(readFileSync(`${process.env.RUNNER_TEMP}/lec-build-run.json`, 'utf8'));
+          assert.equal(run.path, '.github/workflows/lec-release.yml');
+          assert.equal(run.head_repository.full_name, 'lec-org/lec-editor');
+          assert.equal(run.head_branch, 'main');
+          assert.match(run.head_sha, /^[a-f0-9]{40}$/);
+          appendFileSync(process.env.GITHUB_ENV, `RELEASE_COMMIT=${run.head_sha}\n`);
+          console.log(`制品源码提交：${run.head_sha}`);
+          JS
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: lec-*
+          path: dist
+          merge-multiple: true
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+      - name: 发布双源制品与校验清单
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: node script/lec-release.mjs "$RELEASE_TAG" dist

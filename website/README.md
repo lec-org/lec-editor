@@ -21,7 +21,7 @@ npm run dev
 1. 在仓库 Actions Secret 中配置 `GITEE_TOKEN`，使用仅授权 `lec-org/lec-editor`、`projects` 权限的 Gitee 仓库级令牌。令牌过期后需要更新 Secret。
 2. 在 `main` 运行 **LEC 制品发布** 工作流，输入新标签，例如 `lec-v1.30.0`。三个平台必须全部构建成功后才会发布。关闭 `publish` 可只测试构建。
 3. 流水线复用上游原生打包脚本，构建 macOS ARM64 DMG、Windows x64 EXE 和 Linux x64 TAR.GZ。保留 `dev` 通道、Zed Dev 应用名和上游许可证，并通过上游提供的 `ZED_UPDATE_EXPLANATION` 禁用自动更新，避免混用上游安装包。
-4. GitHub Release 起初为草稿，Gitee 制品和清单全部上传成功后才公开。官网流水线随后自动更新下载入口。失败时可从失败的任务重新运行，或重新运行官网工作流；已经正式发布的版本禁止覆盖。
+4. GitHub Release 起初为草稿，Gitee 制品和清单全部上传成功后才公开。官网流水线随后自动更新下载入口。构建成功而上传失败时，可单独运行 **LEC 制品上传**，填写原构建运行 ID 与相同标签，复用已有安装包。发布脚本会核对制品来源和源码提交，禁止覆盖已经正式发布的版本。官网也可单独重新部署。
 
 `script/lec-release.mjs` 为安装包生成 SHA-256，并把相同内容上传到两个源。Gitee 普通仓库单附件限制 100 MB，因此超过 95 MB 的文件会按字节分卷；页面提供全部分卷链接和 Windows / macOS / Linux 还原命令。还原后必须核对原始安装包 SHA-256。Gitee 的单仓库总附件配额为 1 GB，历史版本附件需要按实际容量人工管理，脚本不会自动删除旧版本。
 

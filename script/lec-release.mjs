@@ -62,7 +62,8 @@ async function publish(tag, directory) {
   if (!token) throw new Error("请先配置仅授权 lec-editor 的 GITEE_TOKEN 仓库 Secret");
   const gh = (...args) =>
     execFileSync("gh", [...args, "--repo", repository], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
-  const commit = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+  const commit = process.env.RELEASE_COMMIT || execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+  if (!/^[a-f0-9]{40}$/.test(commit)) throw new Error("无效构建提交");
   const files = (await readdir(directory)).sort();
   if (files.join(",") !== [...packages].sort().join(","))
     throw new Error("三个平台的安装包必须齐全，且不能混入其他文件");
@@ -120,8 +121,8 @@ async function publish(tag, directory) {
       body: notes,
       prerelease: "true",
     }));
-  const giteeTag = await gitee(`/tags/${tag}`);
-  if (giteeTag.commit.sha !== commit) throw new Error("Gitee 标签对应源码与本次构建不一致");
+  const giteeCommit = await gitee(`/commits/${tag}`);
+  if (giteeCommit.sha !== commit) throw new Error("Gitee 标签对应源码与本次构建不一致");
   const attached = await gitee(`/releases/${release.id}/attach_files?per_page=100`);
   const manifest = { tag, commit, publishedAt: new Date().toISOString(), files: [] };
   let restore =
