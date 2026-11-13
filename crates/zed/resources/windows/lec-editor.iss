@@ -2,20 +2,21 @@
 ; Keep AppMutex in sync with release_channel::app_identifier() for stable builds.
 [Setup]
 AppId={{9A7293B9-052B-4807-8DCB-E6C4B1A93D58}
-AppName=LEC Editor
+AppName=line
 AppVersion={#AppVersion}
 AppPublisher=LEC
 AppPublisherURL=https://github.com/lec-org/lec-editor
 AppSupportURL=https://github.com/lec-org/lec-editor/issues
 AppUpdatesURL=https://github.com/lec-org/lec-editor/releases
 DefaultDirName={localappdata}\Programs\LECEditor
-DefaultGroupName=LEC Editor
+DefaultGroupName=line
 PrivilegesRequired=lowest
 DisableProgramGroupPage=yes
 OutputDir={#OutputDir}
-OutputBaseFilename=LECEditor-{#AppVersion}-{#Architecture}-Setup
+OutputBaseFilename=line-{#AppVersion}-{#Architecture}-Setup
 SourceDir={#SourceDir}
 UninstallDisplayIcon={app}\leceditor.exe
+SetupIconFile={#SourcePath}app-icon.ico
 AppMutex=LEC-Editor-Stable-Instance-Mutex
 SetupMutex=LEC-Editor-Setup
 Compression=lzma2
@@ -42,8 +43,8 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; Flags: unchecked
 Source: "*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 
 [Icons]
-Name: "{group}\LEC Editor"; Filename: "{app}\leceditor.exe"; AppUserModelID: "org.lec.Editor"
-Name: "{autodesktop}\LEC Editor"; Filename: "{app}\leceditor.exe"; Tasks: desktopicon; AppUserModelID: "org.lec.Editor"
+Name: "{group}\line"; Filename: "{app}\leceditor.exe"; AppUserModelID: "org.lec.Editor"
+Name: "{autodesktop}\line"; Filename: "{app}\leceditor.exe"; Tasks: desktopicon; AppUserModelID: "org.lec.Editor"
 
 [Registry]
 Root: HKCU; Subkey: "Software\Classes\LECEditor.Source"; ValueType: string; ValueName: ""; ValueData: "C/C++ Source File"; Flags: uninsdeletekey
@@ -54,4 +55,4 @@ Root: HKCU; Subkey: "Software\Classes\.h\OpenWithProgids"; ValueType: string; Va
 Root: HKCU; Subkey: "Software\Classes\.hpp\OpenWithProgids"; ValueType: string; ValueName: "LECEditor.Source"; ValueData: ""; Flags: uninsdeletevalue
 
 [Run]
-Filename: "{app}\leceditor.exe"; Description: "{cm:LaunchProgram,LEC Editor}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\leceditor.exe"; Description: "{cm:LaunchProgram,line}"; Flags: nowait postinstall skipifsilent

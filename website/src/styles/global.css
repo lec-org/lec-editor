@@ -67,24 +67,11 @@ header {
   letter-spacing: -0.7px;
   white-space: nowrap;
 }
-.brand-light {
-  font-weight: 450;
-  color: #6d7787;
-  margin-left: -3px;
-}
 .brand-mark {
-  background: var(--blue);
-  color: white;
-  font:
-    600 16px ui-monospace,
-    monospace;
-  letter-spacing: -2px;
   width: 32px;
   height: 32px;
-  border-radius: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
+  object-fit: contain;
   margin-right: 3px;
 }
 nav {

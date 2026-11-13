@@ -369,7 +369,10 @@ impl ExtensionCard {
                             let version = extension.manifest.version.clone();
                             move |_, cx| {
                                 Tooltip::simple(
-                                    t!("v{version} is not compatible with this version of LEC Editor.", version = version),
+                                    t!(
+                                        "v{version} is not compatible with this version of line.",
+                                        version = version
+                                    ),
                                     cx,
                                 )
                             }

@@ -122,9 +122,9 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $installers = @(Get-ChildItem target/LECEditor-*-x86_64-Setup.exe)
+          $installers = @(Get-ChildItem target/line-*-x86_64-Setup.exe)
           if ($installers.Count -ne 1) { throw '必须生成唯一的 LEC 安装包' }
-          Copy-Item $installers[0].FullName dist/lec-editor-windows-x86_64.exe
+          Copy-Item $installers[0].FullName dist/line-windows-x86_64.exe
       - name: 保存安装包
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:

@@ -6,7 +6,7 @@ import { basename, join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const repository = "lec-org/lec-editor";
-const packages = ["lec-editor-macos-aarch64.dmg", "lec-editor-windows-x86_64.exe", "lec-editor-linux-x86_64.tar.gz"];
+const packages = ["line-macos-aarch64.dmg", "line-windows-x86_64.exe", "line-linux-x86_64.tar.gz"];
 
 export async function checksum(path) {
   const hash = createHash("sha256");
@@ -89,7 +89,7 @@ async function publish(tag, directory) {
     return response.json();
   }
 
-  const notes = `# LEC Editor ${tag}\n\n面向新生的中文 C/C++ 编辑器，基于 Zed，保留上游许可证。\n\n- 三端均内置 C/C++ 工具链，无需另装编译器或配置系统 PATH。\n- macOS 仅本地签名，未经 Apple 公证；Windows 未签名，尚未完成真机安装验收。\n- 不连接上游自动更新；新版本请从官网下载。\n- Gitee 超过 100 MB 的安装包使用分卷，下载全部分卷后按 RESTORE.md 还原，并核对 SHA256SUMS。\n\n对应源码：https://github.com/${repository}/tree/${commit}\n官网：https://lec-org.github.io/lec-editor/\n`;
+  const notes = `# line ${tag}\n\n面向新生的中文 C/C++ 编辑器，基于 Zed，保留上游许可证。\n\n- 三端均内置 C/C++ 工具链，无需另装编译器或配置系统 PATH。\n- macOS 仅本地签名，未经 Apple 公证；Windows 未签名，尚未完成真机安装验收。\n- 不连接上游自动更新；新版本请从官网下载。\n- Gitee 超过 100 MB 的安装包使用分卷，下载全部分卷后按 RESTORE.md 还原，并核对 SHA256SUMS。\n\n对应源码：https://github.com/${repository}/tree/${commit}\n官网：https://lec-org.github.io/lec-editor/\n`;
   // 先建立草稿，全部附件和清单就绪后才对外发布，避免官网出现半套安装包。
   const releases = JSON.parse(gh("release", "list", "--limit", "100", "--json", "tagName,isDraft"));
   const existing = releases.find((release) => release.tagName === tag);
@@ -107,7 +107,7 @@ async function publish(tag, directory) {
       "--target",
       commit,
       "--title",
-      `LEC Editor ${tag}`,
+      `line ${tag}`,
       "--draft",
       "--notes-file",
       notesPath,
@@ -117,7 +117,7 @@ async function publish(tag, directory) {
     (await gitee("/releases", {
       tag_name: tag,
       target_commitish: commit,
-      name: `LEC Editor ${tag}`,
+      name: `line ${tag}`,
       body: notes,
       prerelease: "true",
     }));

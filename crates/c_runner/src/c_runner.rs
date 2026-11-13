@@ -110,7 +110,7 @@ pub fn run_file(source: &Path) -> Result<i32, String> {
         directories.extend(env::split_paths(&path).filter(|path| path.is_absolute()));
     }
     let compiler = select_compiler(directory, language, &directories).ok_or_else(|| {
-        "未找到 C/C++ 编译器。请重新安装包含工具链的 LEC Editor；源码开发环境也可以使用 PATH 中的 Clang 或 GCC。".to_owned()
+        "未找到 C/C++ 编译器。请重新安装包含工具链的 line；源码开发环境也可以使用 PATH 中的 Clang 或 GCC。".to_owned()
     })?;
     compile_and_run(&source, language, &compiler)
 }

@@ -1,6 +1,6 @@
 version: '1.0'
 name: lec-linux
-displayName: LEC Editor Linux 构建
+displayName: line Linux 构建
 triggers:
   trigger: auto
   push:
@@ -33,7 +33,7 @@ stages:
           export CC=clang-18 CXX=clang++-18 LLD=/usr/bin/ld.lld-18
           export ZED_UPDATE_EXPLANATION='LEC 社区构建，请从 https://lec-org.github.io/lec-editor/ 手动下载更新。'
           python3 script/bundle-lec-unix.py
-          sha256sum dist/lec-editor-linux-*.tar.gz > dist/SHA256SUMS
+          sha256sum dist/line-linux-*.tar.gz > dist/SHA256SUMS
         artifacts:
           - name: LEC_LINUX
             path:

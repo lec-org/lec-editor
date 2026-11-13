@@ -1,4 +1,4 @@
-name: LEC Editor
+name: line
 
 on:
   push:

@@ -52,11 +52,12 @@ class ToolchainTests(unittest.TestCase):
                         checked.append(runner)
                     if arguments[0] == "hdiutil":
                         stage = Path(arguments[arguments.index("-srcfolder") + 1])
-                        app = stage / "LEC Editor.app"
+                        app = stage / "line.app"
                         with (app / "Contents/Info.plist").open("rb") as stream:
                             info = plistlib.load(stream)
                         self.assertEqual(info["CFBundleExecutable"], "leceditor")
                         self.assertEqual(info["CFBundleIdentifier"], "org.lec.Editor")
+                        self.assertEqual(info["CFBundleDisplayName"], "line")
                         self.assertTrue((app / "Contents/Resources/THIRD_PARTY.md").exists())
                         self.assertEqual(len(checked), 1)
 
@@ -67,9 +68,9 @@ class ToolchainTests(unittest.TestCase):
                     BUNDLE.bundle(skip_build=True)
                 self.assertEqual(len(checked), 1)
                 if system == "Linux":
-                    with tarfile.open(root / "dist/lec-editor-linux-aarch64.tar.gz") as archive:
+                    with tarfile.open(root / "dist/line-linux-aarch64.tar.gz") as archive:
                         for name in ["bin/leceditor", "bin/lec-run", "bin/toolchains/zig/zig", "THIRD_PARTY.md"]:
-                            self.assertIn(f"lec-editor/{name}", archive.getnames())
+                            self.assertIn(f"line/{name}", archive.getnames())
 
     def test_install_preserves_runtime_and_licenses_for_zip_and_tar(self):
         for extension in ["zip", "tar.xz"]:

@@ -1,9 +1,9 @@
 > [!IMPORTANT]
 > Remove this line to confirm you've reviewed this PR before submitting.
 
-# LEC Editor
+# line
 
-LEC Editor 是面向大一新生的极简中文 C/C++ 编辑器，基于 Zed，参考 Wu 的功能裁剪与中文化实现，围绕“打开文件、编写代码、运行程序”提供清晰的学习流程。
+line 是面向大一新生的极简中文 C/C++ 编辑器，基于 Zed，参考 Wu 的功能裁剪与中文化实现，围绕“打开文件、编写代码、运行程序”提供清晰的学习流程。
 
 [产品官网](https://lec-org.github.io/lec-editor/) · [发行记录](https://github.com/lec-org/lec-editor/releases) · [Gitee 镜像](https://gitee.com/lec-org/lec-editor)
 
@@ -57,6 +57,6 @@ Windows 需要 Visual Studio C++ Build Tools、Windows SDK、Python 3.12 或更�
 
 ## 开源说明
 
-LEC Editor 固定基于 Zed `v1.28.1`，保留上游版权声明与许可证。主体代码使用 GPL-3.0-or-later，部分组件使用 Apache-2.0；导入 Wu 的代码及来源记录见[第三方说明](docs/lec/THIRD_PARTY.md)。
+line 固定基于 Zed `v1.28.1`，保留上游版权声明与许可证。主体代码使用 GPL-3.0-or-later，部分组件使用 Apache-2.0；导入 Wu 的代码及来源记录见[第三方说明](docs/lec/THIRD_PARTY.md)。
 
 更多开发约束见[上游基线记录](UPSTREAM.md)与[第一阶段说明](docs/lec/README.md)。

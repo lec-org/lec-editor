@@ -84,9 +84,7 @@ pub fn run(
                 .context("cannot locate application directory")?
                 .join(format!("lec-run{}", std::env::consts::EXE_SUFFIX));
             if !runner.is_file() {
-                return Err(anyhow!(t!(
-                    "The C/C++ runner is missing. Reinstall LEC Editor."
-                )));
+                return Err(anyhow!(t!("The C/C++ runner is missing. Reinstall line.")));
             }
             let label = t!(
                 "Run {file}",

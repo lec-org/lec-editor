@@ -91,7 +91,7 @@ async fn load_appearance_manifest(fs: Arc<dyn Fs>, directory: &Path) -> Result<E
     manifest.populate_defaults(directory, fs.clone()).await?;
     // 安装包和本地目录都要检查，不能只相信市场分类或清单省略的字段。
     if !manifest.is_appearance_only() || fs.is_file(&directory.join("extension.wasm")).await {
-        bail!("LEC Editor 仅支持纯配色主题和图标主题扩展。");
+        bail!("line 仅支持纯配色主题和图标主题扩展。");
     }
     Ok(manifest)
 }
@@ -919,7 +919,7 @@ impl ExtensionStore {
                         .is_none_or(|version| *version == extension.manifest.version)
                         && is_version_compatible(release_channel, extension)
                 }) {
-                    bail!("LEC Editor 仅支持下载兼容的纯配色主题和图标主题扩展。");
+                    bail!("line 仅支持下载兼容的纯配色主题和图标主题扩展。");
                 }
                 cx.background_spawn(async move {
                     let mut response = http_client

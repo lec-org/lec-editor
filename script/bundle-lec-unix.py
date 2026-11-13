@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""生成包含 C/C++ 工具链的 LEC Editor macOS / Linux 安装包。"""
+"""生成包含 C/C++ 工具链的 line macOS / Linux 安装包。"""
 
 import argparse
 import os
@@ -37,7 +37,7 @@ def bundle(skip_build):
         run(*arguments, env=environment)
     output = ROOT / "target" / target / "release"
     with tempfile.TemporaryDirectory(prefix="lec-bundle-", dir=ROOT / "target") as temporary:
-        stage = Path(temporary) / ("LEC Editor.app" if system == "macos" else "lec-editor")
+        stage = Path(temporary) / ("line.app" if system == "macos" else "line")
         binaries = stage / ("Contents/MacOS" if system == "macos" else "bin")
         binaries.mkdir(parents=True)
         for name in ["leceditor", "lec-run"]:
@@ -66,8 +66,8 @@ def bundle(skip_build):
             shutil.rmtree(iconset)
             with (stage / "Contents/Info.plist").open("wb") as stream:
                 plistlib.dump({
-                    "CFBundleExecutable": "leceditor", "CFBundleName": "LEC Editor",
-                    "CFBundleDisplayName": "LEC Editor", "CFBundleIdentifier": "org.lec.Editor",
+                    "CFBundleExecutable": "leceditor", "CFBundleName": "line",
+                    "CFBundleDisplayName": "line", "CFBundleIdentifier": "org.lec.Editor",
                     "CFBundlePackageType": "APPL", "CFBundleVersion": version,
                     "CFBundleShortVersionString": version, "CFBundleIconFile": "LECEditor.icns",
                     "LSMinimumSystemVersion": "12.0", "NSHighResolutionCapable": True,
@@ -83,10 +83,10 @@ def bundle(skip_build):
         dist.mkdir(exist_ok=True)
         if system == "macos":
             (Path(temporary) / "Applications").symlink_to("/Applications")
-            run("hdiutil", "create", "-volname", "LEC Editor", "-srcfolder", temporary,
-                "-ov", "-format", "ULMO", str(dist / f"lec-editor-macos-{architecture}.dmg"))
+            run("hdiutil", "create", "-volname", "line", "-srcfolder", temporary,
+                "-ov", "-format", "ULMO", str(dist / f"line-macos-{architecture}.dmg"))
         else:
-            with tarfile.open(dist / f"lec-editor-linux-{architecture}.tar.gz", "w:gz") as archive:
+            with tarfile.open(dist / f"line-linux-{architecture}.tar.gz", "w:gz") as archive:
                 archive.add(stage, arcname=stage.name)
 
 

@@ -1,4 +1,4 @@
-# LEC Editor 官网与发布
+# line 官网与发布
 
 官网：https://lec-org.github.io/lec-editor/
 

@@ -909,7 +909,7 @@ fn open_settings_editor_with(
         cx.open_window(
             WindowOptions {
                 titlebar: Some(TitlebarOptions {
-                    title: Some(t!("LEC Editor — Settings")),
+                    title: Some(t!("line — Settings")),
                     appears_transparent: true,
                     traffic_light_position: Some(point(px(12.0), px(12.0))),
                 }),

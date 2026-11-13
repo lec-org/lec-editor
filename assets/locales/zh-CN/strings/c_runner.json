@@ -4,6 +4,6 @@
   "Open a C or C++ source file to run.": "请打开一个 C 或 C++ 源文件再运行。",
   "Running remote files is not supported yet.": "当前暂不支持运行远程文件。",
   "Save the file with a .c or .cpp extension to run it.": "请将文件保存为 .c 或 .cpp 后再运行。",
-  "The C/C++ runner is missing. Reinstall LEC Editor.": "缺少 C/C++ 运行工具，请重新安装 LEC Editor。",
+  "The C/C++ runner is missing. Reinstall line.": "缺少 C/C++ 运行工具，请重新安装 line。",
   "The terminal is still initializing. Try running again.": "终端正在初始化，请稍后再次运行。"
 }

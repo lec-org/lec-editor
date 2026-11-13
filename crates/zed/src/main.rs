@@ -974,10 +974,10 @@ fn handle_open_request(request: OpenRequest, app_state: Arc<AppState>, cx: &mut 
                 .detach_and_log_err(cx);
             }
             OpenRequestKind::AgentPanel => {
-                log::warn!("This link is not supported by LEC Editor");
+                log::warn!("This link is not supported by line");
             }
             OpenRequestKind::InstallSkill { .. } => {
-                log::warn!("This link is not supported by LEC Editor");
+                log::warn!("This link is not supported by line");
             }
             OpenRequestKind::DockMenuAction { index } => {
                 cx.perform_dock_menu_action(index);
