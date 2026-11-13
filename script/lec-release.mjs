@@ -83,12 +83,17 @@ async function publish(tag, directory) {
   const releases = JSON.parse(gh('release', 'list', '--limit', '100', '--json', 'tagName,isDraft'));
   const existing = releases.find(release => release.tagName === tag);
   if (existing && !existing.isDraft) throw new Error('已发布版本不可覆盖，请使用新的标签');
+  if (existing && JSON.parse(gh('release', 'view', tag, '--json', 'targetCommitish')).targetCommitish !== commit) {
+    throw new Error('已有草稿来自不同源码提交，请使用新的标签');
+  }
   const notesPath = join(directory, 'RELEASE.md');
   await writeFile(notesPath, notes);
   if (!existing) gh('release', 'create', tag, '--target', commit, '--title', `LEC Editor ${tag}`, '--draft', '--notes-file', notesPath);
   const release = await gitee(`/releases/tags/${tag}`, undefined, true) || await gitee('/releases', {
     tag_name: tag, target_commitish: commit, name: `LEC Editor ${tag}`, body: notes, prerelease: 'true',
   });
+  const giteeTag = await gitee(`/tags/${tag}`);
+  if (giteeTag.commit.sha !== commit) throw new Error('Gitee 标签对应源码与本次构建不一致');
   const attached = await gitee(`/releases/${release.id}/attach_files?per_page=100`);
   const manifest = { tag, commit, publishedAt: new Date().toISOString(), files: [] };
   let restore = '# Gitee 分卷还原\n\n下载同一安装包的全部分卷到同一目录，再执行对应命令。还原后核对官网列出的 SHA-256。\n\n';

@@ -28,7 +28,37 @@ env:
   ZED_UPDATE_EXPLANATION: 'LEC 社区构建，请从 https://lec-org.github.io/lec-editor/ 手动下载更新。'
 
 jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+      - name: 检查发布脚本与凭据
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          PUBLISH: ${{ inputs.publish }}
+        run: |
+          [[ "$RELEASE_TAG" =~ ^lec-v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]
+          node --test script/lec-release.test.mjs
+          if [ "$PUBLISH" = true ]; then
+            node --input-type=module <<'JS'
+          try {
+            if (!process.env.GITEE_TOKEN) throw new Error('缺少 GITEE_TOKEN');
+            const url = new URL('https://gitee.com/api/v5/user');
+            url.searchParams.set('access_token', process.env.GITEE_TOKEN);
+            const response = await fetch(url, {signal: AbortSignal.timeout(30000)});
+            if (!response.ok) throw new Error(`Gitee 凭据验证返回 ${response.status}`);
+            console.log('Gitee 凭据有效');
+          } catch (error) {
+            console.error(error.cause ? 'Gitee 凭据验证网络错误' : error.message);
+            process.exitCode = 1;
+          }
+          JS
+          fi
+
   build:
+    needs: validate
     strategy:
       fail-fast: false
       matrix:
@@ -86,6 +116,10 @@ jobs:
           ALLOW_MISSING_LICENSES: '1'
         run: |
           ./script/bundle-windows.ps1 -Architecture x86_64
+      - name: 收集 Windows 安装包
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
           Copy-Item $env:SETUP_PATH dist/lec-editor-windows-x86_64.exe
       - name: 保存安装包
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
