@@ -2034,7 +2034,7 @@ impl RunningState {
             this.add_item(Box::new(center_console), true, false, None, window, cx);
 
             this.add_item(Box::new(center_variables), true, false, None, window, cx);
-            this.activate_item(0, false, false, window, cx);
+            this.activate_item(1, false, false, window, cx);
         });
 
         let rightmost_pane = new_debugger_pane(workspace.clone(), project, window, cx);

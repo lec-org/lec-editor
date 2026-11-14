@@ -5,5 +5,11 @@
   "Running remote files is not supported yet.": "当前暂不支持运行远程文件。",
   "Save the file with a .c or .cpp extension to run it.": "请将文件保存为 .c 或 .cpp 后再运行。",
   "The C/C++ runner is missing. Reinstall line.": "缺少 C/C++ 运行工具，请重新安装 line。",
-  "The terminal is still initializing. Try running again.": "终端正在初始化，请稍后再次运行。"
+  "The terminal is still initializing. Try running again.": "终端正在初始化，请稍后再次运行。",
+  "Debug Current File": "调试当前文件",
+  "Debug {file}": "调试 {file}",
+  "Compile for debugging": "调试编译",
+  "The C/C++ debugger is missing. Reinstall line.": "缺少 C/C++ 调试器，请重新安装 line。",
+  "Stop the current debug session before starting another.": "请先停止当前调试，再启动新的调试。",
+  "The debugger is still initializing. Try again.": "调试面板正在初始化，请稍后重试。"
 }

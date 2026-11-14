@@ -40,6 +40,8 @@ actions!(
     [
         /// Saves, compiles and runs the current C or C++ source file.
         RunCurrentFile,
+        /// 保存、编译并调试当前 C/C++ 源文件。
+        DebugCurrentFile,
         /// Opens the settings editor.
         #[action(deprecated_aliases = ["zed_actions::OpenSettingsEditor"])]
         OpenSettings,

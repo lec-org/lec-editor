@@ -24,13 +24,7 @@ def verify_archive(archive, expected):
         raise ValueError(f"工具链 SHA256 校验失败：{archive}")
 
 
-def install(platform, destination):
-    asset = LOCK["platforms"][platform]
-    destination = Path(destination).resolve()
-    if destination.exists():
-        raise ValueError(f"工具链目录已存在，请使用新的打包目录：{destination}")
-    cache = ROOT / "target/lec-toolchain-cache"
-    cache.mkdir(parents=True, exist_ok=True)
+def download_archive(asset, cache):
     archive = cache / asset["tarball"].rsplit("/", 1)[1]
     if not archive.exists():
         with tempfile.TemporaryDirectory(dir=cache) as temporary:
@@ -42,27 +36,63 @@ def install(platform, destination):
             verify_archive(download, asset["shasum"])
             download.replace(archive)
     verify_archive(archive, asset["shasum"])
+    return archive
+
+
+def install(platform, destination, *, debugger=False):
+    package = LOCK["debugger"] if debugger else LOCK
+    asset = package["platforms"][platform]
+    destination = Path(destination).resolve()
+    if destination.exists():
+        raise ValueError(f"工具链目录已存在，请使用新的打包目录：{destination}")
+    cache = ROOT / "target/lec-toolchain-cache"
+    if debugger:
+        cache = cache / f"codelldb-{package['version']}"
+    cache.mkdir(parents=True, exist_ok=True)
+    archive = download_archive(asset, cache)
     with tempfile.TemporaryDirectory(dir=cache) as temporary:
-        if archive.suffix == ".zip":
+        if archive.suffix in [".zip", ".vsix"]:
             with zipfile.ZipFile(archive) as bundle:
                 for member in bundle.namelist():
                     if not (Path(temporary) / member).resolve().is_relative_to(Path(temporary).resolve()):
                         raise ValueError("工具链 ZIP 包含越界路径")
                 bundle.extractall(temporary)
+                if os.name != "nt":
+                    for member in bundle.infolist():
+                        mode = member.external_attr >> 16 & 0o777
+                        if mode:
+                            (Path(temporary) / member.filename).chmod(mode)
         else:
             with tarfile.open(archive) as bundle:
                 bundle.extractall(temporary, filter="data")
-        source = Path(temporary) / f"zig-{platform}-{LOCK['version']}"
+        source = Path(temporary) / ("extension" if debugger else f"zig-{platform}-{package['version']}")
         executable = "zig.exe" if platform.endswith("windows") else "zig"
-        for required in [executable, "LICENSE", "lib/libc", "lib/libcxx"]:
+        required_files = (["adapter/codelldb.exe" if platform.endswith("windows") else "adapter/codelldb",
+                           "lldb/lib", "package.json"] if debugger
+                          else [executable, "LICENSE", "lib/libc", "lib/libcxx"])
+        for required in required_files:
             if not (source / required).exists():
                 raise ValueError(f"工具链缺少 {required}")
         # 保留发行包中的全部许可证和运行库来源，避免裁剪时遗漏传递依赖。
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(source, destination, symlinks=True)
-    (destination / "LEC-TOOLCHAIN.json").write_text(
-        json.dumps({"version": LOCK["version"], "platform": platform, **asset,
-                    "source": LOCK["source"]}, ensure_ascii=False, indent=2) + "\n",
+    if debugger:
+        shutil.copytree(ROOT / "assets/debugger-licenses", destination / "licenses")
+        if platform == "aarch64-macos":
+            # 新版发行包缺少 debugserver；只补充旧版官方包的辅助程序，保留新版 LLDB 解析器。
+            helper = package["macos_debugserver"]
+            helper_cache = cache.parent / f"codelldb-{helper['version']}"
+            helper_cache.mkdir(parents=True, exist_ok=True)
+            helper_archive = download_archive(helper, helper_cache)
+            with zipfile.ZipFile(helper_archive) as bundle:
+                server = destination / "lldb/bin/debugserver"
+                server.parent.mkdir(parents=True, exist_ok=True)
+                server.write_bytes(bundle.read("extension/lldb/bin/debugserver"))
+                server.chmod(0o755)
+    (destination / ("LEC-DEBUGGER.json" if debugger else "LEC-TOOLCHAIN.json")).write_text(
+        json.dumps({"version": package["version"], "platform": platform, **asset,
+                    "source": package["source"],
+                    **({"macos_debugserver": package["macos_debugserver"]} if debugger and platform == "aarch64-macos" else {})}, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     print(f"已内置工具链：{destination}", flush=True)
@@ -130,10 +160,15 @@ if __name__ == "__main__":
     installer = commands.add_parser("install")
     installer.add_argument("platform", choices=LOCK["platforms"])
     installer.add_argument("destination", type=Path)
+    debugger_installer = commands.add_parser("install-debugger")
+    debugger_installer.add_argument("platform", choices=LOCK["debugger"]["platforms"])
+    debugger_installer.add_argument("destination", type=Path)
     checker = commands.add_parser("check")
     checker.add_argument("runner", type=Path)
     arguments = parser.parse_args()
     if arguments.command == "install":
         install(arguments.platform, arguments.destination)
+    elif arguments.command == "install-debugger":
+        install(arguments.platform, arguments.destination, debugger=True)
     else:
         check(arguments.runner)

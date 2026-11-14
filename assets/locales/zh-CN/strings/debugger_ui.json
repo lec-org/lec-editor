@@ -46,7 +46,7 @@
   "Enable Data Breakpoint": "启用数据断点",
   "Enable Exception Breakpoint": "启用异常断点",
   "Evaluate": "求值",
-  "Evaluate an expression": "对表达式求值",
+  "Evaluate an expression": "输入要计算的表达式",
   "Ex: $ZED_WORKTREE_ROOT": "例如：$ZED_WORKTREE_ROOT",
   "Exception Breakpoints cannot be removed from the breakpoint list": "异常断点无法从断点列表中移除",
   "Expand": "展开",
@@ -132,5 +132,13 @@
   "history-{number}": "历史记录 {number}",
   "in {directory}/": "位于 {directory}/",
   "in {file}": "位于 {file}",
-  "{adapter}: is not a valid adapter name": "{adapter}：不是有效的适配器名称"
+  "{adapter}: is not a valid adapter name": "{adapter}：不是有效的适配器名称",
+  "Locals": "局部变量",
+  "Local": "局部变量",
+  "Globals": "全局变量",
+  "Statics": "静态变量",
+  "Registers": "寄存器",
+  "Stop Debugging": "停止调试",
+  "Debug Current File": "调试当前文件",
+  "Disassembly": "反汇编"
 }

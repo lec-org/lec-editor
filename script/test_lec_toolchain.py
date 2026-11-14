@@ -2,6 +2,7 @@
 
 import hashlib
 import importlib.util
+import os
 from pathlib import Path
 import plistlib
 import tarfile
@@ -44,6 +45,13 @@ class ToolchainTests(unittest.TestCase):
                         destination = Path(arguments[-1])
                         destination.mkdir(parents=True)
                         (destination / "zig").write_text("compiler")
+                    if "install-debugger" in arguments:
+                        destination = Path(arguments[-1]) / "adapter/codelldb"
+                        destination.parent.mkdir(parents=True)
+                        destination.write_text("debugger")
+                    if len(arguments) > 1 and arguments[1] == "script/check-lec-debugger.py":
+                        runner = Path(arguments[-1])
+                        self.assertTrue((runner.parent / "toolchains/codelldb/adapter/codelldb").exists())
                     if "check" in arguments:
                         runner = Path(arguments[-1])
                         self.assertEqual(runner.read_text(), "runner")
@@ -69,7 +77,7 @@ class ToolchainTests(unittest.TestCase):
                 self.assertEqual(len(checked), 1)
                 if system == "Linux":
                     with tarfile.open(root / "dist/line-linux-aarch64.tar.gz") as archive:
-                        for name in ["bin/leceditor", "bin/lec-run", "bin/toolchains/zig/zig", "THIRD_PARTY.md"]:
+                        for name in ["bin/leceditor", "bin/lec-run", "bin/toolchains/zig/zig", "bin/toolchains/codelldb/adapter/codelldb", "THIRD_PARTY.md"]:
                             self.assertIn(f"line/{name}", archive.getnames())
 
     def test_install_preserves_runtime_and_licenses_for_zip_and_tar(self):
@@ -107,6 +115,42 @@ class ToolchainTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, "SHA256"):
                         TOOLCHAIN.install("test", root / "another")
                     self.assertFalse((root / "another").exists())
+
+    def test_debugger_install_preserves_executable_modes_and_notices(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            cache = root / "target/lec-toolchain-cache/codelldb-test"
+            cache.mkdir(parents=True)
+            notices = root / "assets/debugger-licenses"
+            notices.mkdir(parents=True)
+            (notices / "LICENSE.txt").write_text("许可声明")
+            archive = cache / "debugger.vsix"
+            with zipfile.ZipFile(archive, "w") as bundle:
+                for name in ["adapter/codelldb", "lldb/lib/liblldb.so", "package.json"]:
+                    member = zipfile.ZipInfo(f"extension/{name}")
+                    member.external_attr = 0o100755 << 16
+                    bundle.writestr(member, name)
+            lock = {"debugger": {"version": "test", "source": "https://example.com/source",
+                    "platforms": {"aarch64-macos": {"tarball": "https://example.com/debugger.vsix",
+                                           "shasum": hashlib.sha256(archive.read_bytes()).hexdigest()}}}}
+            helper_cache = cache.parent / "codelldb-helper"
+            helper_cache.mkdir()
+            helper_archive = helper_cache / "helper.vsix"
+            with zipfile.ZipFile(helper_archive, "w") as bundle:
+                bundle.writestr("extension/lldb/bin/debugserver", "官方调试辅助程序")
+            lock["debugger"]["macos_debugserver"] = {
+                "version": "helper", "source": "https://example.com/helper",
+                "tarball": "https://example.com/helper.vsix",
+                "shasum": hashlib.sha256(helper_archive.read_bytes()).hexdigest(),
+            }
+            destination = root / "toolchains/codelldb"
+            with patch.object(TOOLCHAIN, "ROOT", root), patch.object(TOOLCHAIN, "LOCK", lock):
+                TOOLCHAIN.install("aarch64-macos", destination, debugger=True)
+            if os.name != "nt":
+                self.assertTrue((destination / "adapter/codelldb").stat().st_mode & 0o111)
+            self.assertEqual((destination / "lldb/bin/debugserver").read_text(), "官方调试辅助程序")
+            self.assertEqual((destination / "licenses/LICENSE.txt").read_text(), "许可声明")
+            self.assertTrue((destination / "LEC-DEBUGGER.json").exists())
 
     def test_check_rejects_a_runner_without_a_bundled_toolchain(self):
         with tempfile.TemporaryDirectory() as temporary:

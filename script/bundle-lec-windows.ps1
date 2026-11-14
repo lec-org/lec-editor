@@ -37,6 +37,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw '内置工具链准备失败' }
     python -X utf8 "$PSScriptRoot/lec-toolchain.py" check "$stage/lec-run.exe"
     if ($LASTEXITCODE -ne 0) { throw '内置工具链验收失败，停止打包' }
+    python -X utf8 "$PSScriptRoot/lec-toolchain.py" install-debugger "$Architecture-windows" "$stage/toolchains/codelldb"
+    if ($LASTEXITCODE -ne 0) { throw '内置调试器准备失败' }
+    python -X utf8 "$PSScriptRoot/check-lec-debugger.py" "$stage/lec-run.exe"
+    if ($LASTEXITCODE -ne 0) { throw '内置调试器验收失败，停止打包' }
     if ($Architecture -eq 'x86_64') {
         $agsArchive = Join-Path $root 'target/lec-ags-6.3.0.zip'
         $agsDirectory = Join-Path $root 'target/lec-ags-6.3.0'

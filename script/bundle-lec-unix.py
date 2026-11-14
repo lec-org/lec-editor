@@ -55,6 +55,8 @@ def bundle(skip_build):
             shutil.copy2(ROOT / name, destination / Path(name).name)
         run(sys.executable, "script/lec-toolchain.py", "install", f"{architecture}-{system}",
             str(binaries / "toolchains/zig"))
+        run(sys.executable, "script/lec-toolchain.py", "install-debugger", f"{architecture}-{system}",
+            str(binaries / "toolchains/codelldb"))
         if system == "macos":
             resources = stage / "Contents/Resources"
             iconset = Path(temporary) / "LECEditor.iconset"
@@ -76,9 +78,10 @@ def bundle(skip_build):
                                                "CFBundleTypeRole": "Editor", "LSHandlerRank": "Alternate",
                                                "CFBundleTypeExtensions": ["c", "cpp", "cc", "cxx", "h", "hpp"]}],
                 }, stream)
-            # 工具链同样包含 Mach-O 文件；在最终 .app 上统一完成本地签名。
-            run("codesign", "--force", "--deep", "--sign", "-", str(stage))
+            # 保留官方调试辅助程序的现有签名；强制重签会使其调试权限失效。
+            run("codesign", "--deep", "--sign", "-", str(stage))
         run(sys.executable, "script/lec-toolchain.py", "check", str(binaries / "lec-run"))
+        run(sys.executable, "script/check-lec-debugger.py", str(binaries / "lec-run"))
         dist = ROOT / "dist"
         dist.mkdir(exist_ok=True)
         if system == "macos":

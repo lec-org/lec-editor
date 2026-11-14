@@ -34,10 +34,7 @@ impl DebuggerPaneItem {
             DebuggerPaneItem::Variables,
             DebuggerPaneItem::BreakpointList,
             DebuggerPaneItem::Frames,
-            DebuggerPaneItem::Modules,
-            DebuggerPaneItem::LoadedSources,
             DebuggerPaneItem::Terminal,
-            DebuggerPaneItem::MemoryView,
         ];
         VARIANTS
     }
@@ -57,14 +54,14 @@ impl DebuggerPaneItem {
 
     pub(crate) fn to_shared_string(self) -> SharedString {
         match self {
-            DebuggerPaneItem::Console => SharedString::new_static("Console"),
-            DebuggerPaneItem::Variables => SharedString::new_static("Variables"),
-            DebuggerPaneItem::BreakpointList => SharedString::new_static("Breakpoints"),
-            DebuggerPaneItem::Frames => SharedString::new_static("Frames"),
-            DebuggerPaneItem::Modules => SharedString::new_static("Modules"),
-            DebuggerPaneItem::LoadedSources => SharedString::new_static("Sources"),
-            DebuggerPaneItem::Terminal => SharedString::new_static("Terminal"),
-            DebuggerPaneItem::MemoryView => SharedString::new_static("Memory View"),
+            DebuggerPaneItem::Console => i18n::t!("Console"),
+            DebuggerPaneItem::Variables => i18n::t!("Variables"),
+            DebuggerPaneItem::BreakpointList => i18n::t!("Breakpoints"),
+            DebuggerPaneItem::Frames => i18n::t!("Frames"),
+            DebuggerPaneItem::Modules => i18n::t!("Modules"),
+            DebuggerPaneItem::LoadedSources => i18n::t!("Sources"),
+            DebuggerPaneItem::Terminal => i18n::t!("Terminal"),
+            DebuggerPaneItem::MemoryView => i18n::t!("Memory View"),
         }
     }
     pub(crate) fn tab_tooltip(self) -> SharedString {
@@ -88,7 +85,7 @@ impl DebuggerPaneItem {
             }
             DebuggerPaneItem::MemoryView => "Allows inspection of memory contents",
         };
-        SharedString::new_static(tooltip)
+        i18n::translate(tooltip)
     }
 }
 

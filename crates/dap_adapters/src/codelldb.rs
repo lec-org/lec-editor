@@ -338,8 +338,19 @@ impl DebugAdapter for CodeLldbDebugAdapter {
         user_env: Option<HashMap<String, String>>,
         _: &mut AsyncApp,
     ) -> Result<DebugAdapterBinary> {
+        let executable = std::env::current_exe().context("无法定位调试器目录")?;
+        let bundled = executable
+            .parent()
+            .context("无法定位调试器目录")?
+            .join("toolchains/codelldb/adapter")
+            .join(format!("codelldb{}", consts::EXE_SUFFIX));
         let mut command = user_installed_path
             .map(|p| p.to_string_lossy().into_owned())
+            .or_else(|| {
+                bundled
+                    .is_file()
+                    .then(|| bundled.to_string_lossy().into_owned())
+            })
             .or(self.path_to_codelldb.get().cloned());
 
         if command.is_none() {
@@ -405,7 +416,16 @@ impl DebugAdapter for CodeLldbDebugAdapter {
 
         Ok(DebugAdapterBinary {
             command: Some(command.unwrap()),
-            cwd: Some(delegate.worktree_root_path().to_path_buf()),
+            // 单独打开源文件时，工作树根路径是文件，不能作为调试进程的工作目录。
+            cwd: Some(if delegate.worktree_root_path().is_file() {
+                delegate
+                    .worktree_root_path()
+                    .parent()
+                    .context("source file has no parent directory")?
+                    .to_path_buf()
+            } else {
+                delegate.worktree_root_path().to_path_buf()
+            }),
             arguments: user_args.unwrap_or_else(|| {
                 if let Some(config) = json_config.as_object_mut()
                     && let Some(source_languages) = config.get("sourceLanguages").filter(|value| {

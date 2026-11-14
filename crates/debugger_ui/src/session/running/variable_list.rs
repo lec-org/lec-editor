@@ -1412,7 +1412,12 @@ impl VariableList {
                         }
                     })
                     .tooltip(move |_window, cx| {
-                        Tooltip::for_action_in("Remove Watch", &RemoveWatch, &focus_handle, cx)
+                        Tooltip::for_action_in(
+                            i18n::t!("Remove Watch"),
+                            &RemoveWatch,
+                            &focus_handle,
+                            cx,
+                        )
                     })
                     .icon_size(ui::IconSize::Indicator),
                 ),
@@ -1487,7 +1492,13 @@ impl VariableList {
                             .when(self.disabled, |this| {
                                 this.text_color(Color::Disabled.color(cx))
                             })
-                            .child(scope.name.clone()),
+                            .child(
+                                i18n::translate_filled(
+                                    &scope.name,
+                                    &["Locals", "Local", "Globals", "Statics", "Registers"],
+                                )
+                                .unwrap_or_else(|| scope.name.clone().into()),
+                            ),
                     ),
             )
             .into_any()

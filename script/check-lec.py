@@ -46,7 +46,7 @@ removed_namespaces = (
     "acp::", "agent::", "agents_sidebar::", "assistant::", "edit_prediction::",
     "inline_assistant::", "zeta::", "collab_panel::", "channel_modal::",
     "onboarding::", "repl::", "journal::", "miniprofiler::",
-    "git::", "git_panel::", "debugger::", "debug_panel::",
+    "git::", "git_panel::",
     "variable_list::", "new_process_modal::", "console::",
 )
 keymaps = list((ROOT / "assets/keymaps").rglob("*.json"))

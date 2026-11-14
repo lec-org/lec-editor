@@ -470,7 +470,8 @@ impl StackFrameList {
                         anyhow::Ok(workspace.open_path_preview(
                             project_path,
                             debug_pane,
-                            true,
+                            // 自动定位源码时保留终端输入和安全弹窗的焦点。
+                            false,
                             true,
                             open_preview,
                             window,
@@ -660,7 +661,7 @@ impl StackFrameList {
                                     }
                                 }))
                                 .tooltip(move |window, cx| {
-                                    Tooltip::text("Restart Stack Frame")(window, cx)
+                                    Tooltip::text(i18n::t!("Restart Stack Frame"))(window, cx)
                                 }),
                             ),
                     )
@@ -724,15 +725,26 @@ impl StackFrameList {
                     .text_ui_sm(cx)
                     .truncate()
                     .text_color(cx.theme().colors().text_muted)
-                    .child(format!(
-                        "Show {} more{}",
-                        stack_frames.len(),
-                        first_stack_frame
+                    .child(
+                        if let Some(origin) = first_stack_frame
                             .source
                             .as_ref()
                             .and_then(|source| source.origin.as_ref())
-                            .map_or(String::new(), |origin| format!(": {}", origin))
-                    )),
+                        {
+                            let origin: SharedString = if origin == "disassembly" {
+                                i18n::t!("Disassembly")
+                            } else {
+                                origin.clone().into()
+                            };
+                            i18n::t!(
+                                "Show {count} more: {origin}",
+                                count = stack_frames.len(),
+                                origin = origin
+                            )
+                        } else {
+                            i18n::t!("Show {count} more", count = stack_frames.len())
+                        },
+                    ),
             )
             .into_any()
     }

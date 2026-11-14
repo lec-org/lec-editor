@@ -9,7 +9,7 @@
   {
     // LEC: F5 saves, compiles, and runs the current C/C++ file in every base keymap.
     "context": "Workspace",
-    "bindings": { "f5": "zed::RunCurrentFile" },
+    "bindings": { "f5": "zed::RunCurrentFile", "f6": "zed::DebugCurrentFile" },
   },
   {
     "context": "Picker > Editor",

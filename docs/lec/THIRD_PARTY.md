@@ -20,3 +20,9 @@
 三端 LEC 打包脚本附带 [Zig 0.17.1 官方发行包](https://ziglang.org/download/)，使用其中的 Clang、链接器、C/C++ 头文件及运行库编译学生程序。工具链独立放置在 `lec-run` 旁的 `toolchains/zig`，不改写系统编译环境。
 
 Zig 主体使用 MIT 许可证；其中 LLVM、libc++、libc++abi、musl、MinGW-w64、Darwin 等组件各自保留原有许可证和版权。打包时复制原始发行包的完整内容，包括根目录 `LICENSE`、`lib` 内的许可证及来源声明，不以 Zig 主体许可证替代这些组件的许可证。安装包内的 `LEC-TOOLCHAIN.json` 记录固定版本、平台、官方二进制下载地址、SHA256 和对应的官方源码归档地址；版本与摘要由 `script/lec-toolchain.json` 管理。
+
+## 内置 C/C++ 调试器
+
+基础调试使用 CodeLLDB 1.12.3 及其随附的 LLDB 22.1.8、CPython 3.12.7，安装在 `toolchains/codelldb`，保留原始发行包内容并补充 `assets/debugger-licenses` 中的许可证。固定版本、官方地址和 SHA256 记录在 `script/lec-toolchain.json`，安装结果记录于 `LEC-DEBUGGER.json`。
+
+macOS 新版官方包缺少 `debugserver`，因此从 CodeLLDB 1.11.8 官方包中补充这一辅助程序，保留其原有签名；不替换新版 LLDB。旧版 LLDB 20 在本机读取新系统的 Mach-O 符号时崩溃，不能整体回退。辅助程序采用 LLDB 20.1.4 对应的许可证，并单独锁定来源及摘要。打包后必须实际验证断点、变量、单步和退出，不能以 `--help` 成功代替调试验收。

@@ -96,6 +96,22 @@ fn select_compiler(
 }
 
 pub fn run_file(source: &Path) -> Result<i32, String> {
+    let (source, language, compiler) = source_and_compiler(source)?;
+    compile_and_run(&source, language, &compiler)
+}
+
+/// 生成带调试信息的程序，交给调试器启动，不执行用户代码。
+pub fn compile_file(source: &Path, program: &Path) -> Result<i32, String> {
+    let (source, language, compiler) = source_and_compiler(source)?;
+    let program =
+        std::path::absolute(program).map_err(|error| format!("无法定位调试产物路径：{error}"))?;
+    if let Some(directory) = program.parent().filter(|path| !path.as_os_str().is_empty()) {
+        fs::create_dir_all(directory).map_err(|error| format!("无法创建调试产物目录：{error}"))?;
+    }
+    compile(&source, language, &compiler, &program)
+}
+
+fn source_and_compiler(source: &Path) -> Result<(PathBuf, SourceLanguage, Compiler), String> {
     let language = SourceLanguage::from_path(source)
         .ok_or_else(|| "请选择一个 .c、.cpp、.cc 或 .cxx 源文件。".to_owned())?;
     // 避免 Windows 扩展路径前缀影响编译器的命令行解析。
@@ -112,7 +128,7 @@ pub fn run_file(source: &Path) -> Result<i32, String> {
     let compiler = select_compiler(directory, language, &directories).ok_or_else(|| {
         "未找到 C/C++ 编译器。请重新安装包含工具链的 line；源码开发环境也可以使用 PATH 中的 Clang 或 GCC。".to_owned()
     })?;
-    compile_and_run(&source, language, &compiler)
+    Ok((source, language, compiler))
 }
 
 fn compile_and_run(
@@ -126,6 +142,40 @@ fn compile_and_run(
     let output = RunDirectory::new()?;
     let program = output.0.join(format!("program{}", env::consts::EXE_SUFFIX));
 
+    let code = compile(source, language, compiler, &program)?;
+    if code != 0 {
+        return Ok(code);
+    }
+
+    println!("编译成功，开始运行。\n");
+    let mut command = Command::new(&program);
+    command.current_dir(directory);
+    // 系统 MinGW 编译的程序可能需要编译器目录中的运行库 DLL。
+    if let Some(compiler_directory) = compiler.path().parent() {
+        let mut directories = vec![compiler_directory.to_path_buf()];
+        if let Some(path) = env::var_os("PATH") {
+            directories.extend(env::split_paths(&path));
+        }
+        let path = env::join_paths(directories).map_err(|error| error.to_string())?;
+        command.env("PATH", path);
+    }
+    let status = command
+        .status()
+        .map_err(|error| format!("无法运行程序：{error}"))?;
+    let code = exit_code(status);
+    println!("\n程序已结束，退出码：{code}");
+    Ok(code)
+}
+
+fn compile(
+    source: &Path,
+    language: SourceLanguage,
+    compiler: &Compiler,
+    program: &Path,
+) -> Result<i32, String> {
+    let directory = source
+        .parent()
+        .ok_or_else(|| "无法定位源文件目录。".to_owned())?;
     println!("正在编译 {}", source.display());
     let mut command = Command::new(compiler.path());
     if matches!(compiler, Compiler::Zig(_)) {
@@ -149,7 +199,7 @@ fn compile_and_run(
         .args([language.standard(), "-Wall", "-Wextra", "-g"])
         .arg(source)
         .arg("-o")
-        .arg(&program);
+        .arg(program);
     #[cfg(unix)]
     if language == SourceLanguage::C {
         command.arg("-lm");
@@ -159,27 +209,9 @@ fn compile_and_run(
         .map_err(|error| format!("无法启动编译器 {}：{error}", compiler.path().display()))?;
     if !compilation.success() {
         eprintln!("编译失败，请修改上面的错误后重新运行。");
-        return Ok(exit_code(compilation));
     }
 
-    println!("编译成功，开始运行。\n");
-    let mut command = Command::new(&program);
-    command.current_dir(directory);
-    // 系统 MinGW 编译的程序可能需要编译器目录中的运行库 DLL。
-    if let Some(compiler_directory) = compiler.path().parent() {
-        let mut directories = vec![compiler_directory.to_path_buf()];
-        if let Some(path) = env::var_os("PATH") {
-            directories.extend(env::split_paths(&path));
-        }
-        let path = env::join_paths(directories).map_err(|error| error.to_string())?;
-        command.env("PATH", path);
-    }
-    let status = command
-        .status()
-        .map_err(|error| format!("无法运行程序：{error}"))?;
-    let code = exit_code(status);
-    println!("\n程序已结束，退出码：{code}");
-    Ok(code)
+    Ok(exit_code(compilation))
 }
 
 fn exit_code(status: ExitStatus) -> i32 {

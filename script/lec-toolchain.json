@@ -32,5 +32,29 @@
       "shasum": "4789895bdb1e312a2ea73b2a7c0a0cc8d2ab62ba6976e834a7c54cf443377c15",
       "size": "96063469"
     }
+  },
+  "debugger": {
+    "version": "1.12.3",
+    "source": "https://github.com/vadimcn/codelldb/tree/v1.12.3",
+    "platforms": {
+      "aarch64-macos": {
+        "tarball": "https://github.com/vadimcn/codelldb/releases/download/v1.12.3/codelldb-darwin-arm64.vsix",
+        "shasum": "2f114a990e1b368dd1dbd33c80c0e719767af2d228391ec0df0571c957f9ac91"
+      },
+      "x86_64-linux": {
+        "tarball": "https://github.com/vadimcn/codelldb/releases/download/v1.12.3/codelldb-linux-x64.vsix",
+        "shasum": "1cd7f386598022b51a5b93b9ffa23e812b23f519cfe1833384ec4bef4bfd1be1"
+      },
+      "x86_64-windows": {
+        "tarball": "https://github.com/vadimcn/codelldb/releases/download/v1.12.3/codelldb-win32-x64.vsix",
+        "shasum": "a916e509308dac817732f63ca604a8b93ed29cd16f38a2fa9f0b64ed58e8f51a"
+      }
+    },
+    "macos_debugserver": {
+      "version": "1.11.8",
+      "source": "https://github.com/vadimcn/codelldb/tree/v1.11.8",
+      "tarball": "https://github.com/vadimcn/codelldb/releases/download/v1.11.8/codelldb-darwin-arm64.vsix",
+      "shasum": "a1065e34be3f72954b296657821a06c566a8747d4930c2d9ebb749146a756ed7"
+    }
   }
 }

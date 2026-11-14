@@ -48,6 +48,11 @@ jobs:
       - name: 验证无系统编译器的运行环境
         shell: bash
         run: python script/lec-toolchain.py check "target/debug/lec-run${{ runner.os == 'Windows' && '.exe' || '' }}"
+      - name: 准备内置调试器
+        run: python script/lec-toolchain.py install-debugger ${{ matrix.platform }} target/debug/toolchains/codelldb
+      - name: 验证 C/C++ 断点、变量和单步
+        shell: bash
+        run: python script/check-lec-debugger.py "target/debug/lec-run${{ runner.os == 'Windows' && '.exe' || '' }}"
       - name: 验证 C/C++ 编译运行
         run: cargo +1.98.1 test --locked -p c_runner
   windows:

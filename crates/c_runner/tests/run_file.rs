@@ -162,3 +162,27 @@ fn reports_a_missing_compiler() {
     assert!(!output.status.success());
     assert!(String::from_utf8_lossy(&output.stderr).contains("未找到 C/C++ 编译器"));
 }
+
+#[test]
+fn compile_only_creates_a_program_without_running_it() {
+    let fixture = Fixture::new();
+    fixture.source(
+        "调试练习.c",
+        "#include <stdio.h>\nint main(void) { FILE *file = fopen(\"executed.txt\", \"w\"); if (!file) return 1; fclose(file); return 0; }\n",
+    );
+    let program = fixture
+        .0
+        .join("调试 产物")
+        .join(format!("program{}", std::env::consts::EXE_SUFFIX));
+    let output = Command::new(env!("CARGO_BIN_EXE_lec-run"))
+        .arg("--compile-only")
+        .arg(fixture.0.join("调试练习.c"))
+        .arg(&program)
+        .current_dir(&fixture.0)
+        .output()
+        .expect("compile for debugging");
+    assert_success(&output);
+    assert!(program.is_file());
+    assert!(!fixture.0.join("executed.txt").exists());
+    assert!(!stdout(&output).contains("开始运行"));
+}
