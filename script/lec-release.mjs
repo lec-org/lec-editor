@@ -59,7 +59,8 @@ export function publicDownloadUrl(value) {
 async function publish(tag, directory) {
   if (!/^lec-v\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?$/.test(tag)) throw new Error("无效发布标签");
   const token = process.env.GITEE_TOKEN;
-  if (!token) throw new Error("请先配置仅授权 lec-editor 的 GITEE_TOKEN 仓库 Secret");
+  const publishGitee = process.env.PUBLISH_GITEE === "true";
+  if (publishGitee && !token) throw new Error("请先配置仅授权 lec-editor 的 GITEE_TOKEN 仓库 Secret");
   const gh = (...args) =>
     execFileSync("gh", [...args, "--repo", repository], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
   const commit = process.env.RELEASE_COMMIT || execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
@@ -71,7 +72,7 @@ async function publish(tag, directory) {
     (a, b) => a + b,
     0,
   );
-  if (totalSize > 950_000_000) throw new Error("本次制品已接近 Gitee 仓库 1 GB 总附件配额，请先处理容量");
+  if (publishGitee && totalSize > 950_000_000) throw new Error("本次制品已接近 Gitee 仓库 1 GB 总附件配额，请先处理容量");
 
   async function gitee(path, fields, missingOk = false) {
     const url = new URL(`https://gitee.com/api/v5/repos/${repository}${path}`);
@@ -89,7 +90,7 @@ async function publish(tag, directory) {
     return response.json();
   }
 
-  const notes = `# line ${tag}\n\n面向新生的中文 C/C++ 编辑器，基于 Zed，保留上游许可证。\n\n- 三端均内置 C/C++ 工具链，无需另装编译器或配置系统 PATH。\n- macOS 仅本地签名，未经 Apple 公证；Windows 未签名，尚未完成真机安装验收。\n- 不连接上游自动更新；新版本请从官网下载。\n- Gitee 超过 100 MB 的安装包使用分卷，下载全部分卷后按 RESTORE.md 还原，并核对 SHA256SUMS。\n\n对应源码：https://github.com/${repository}/tree/${commit}\n官网：https://lec-org.github.io/lec-editor/\n`;
+  const notes = `# line ${tag}\n\n面向新生的中文 C/C++ 编辑器，基于 Zed，保留上游许可证。\n\n- 产品名称改为 line，并使用新的应用图标。\n- 三端均内置 C/C++ 工具链，无需另装编译器或配置系统 PATH。\n- macOS 仅本地签名，未经 Apple 公证；Windows 未签名，尚未完成真机安装验收。\n- 不连接上游自动更新；新版本请从官网下载。\n${publishGitee ? "- Gitee 超过 100 MB 的安装包使用分卷，下载全部分卷后按 RESTORE.md 还原，并核对 SHA256SUMS。\n" : ""}\n对应源码：https://github.com/${repository}/tree/${commit}\n官网：https://lec-org.github.io/lec-editor/\n`;
   // 先建立草稿，全部附件和清单就绪后才对外发布，避免官网出现半套安装包。
   const releases = JSON.parse(gh("release", "list", "--limit", "100", "--json", "tagName,isDraft"));
   const existing = releases.find((release) => release.tagName === tag);
@@ -112,24 +113,31 @@ async function publish(tag, directory) {
       "--notes-file",
       notesPath,
     );
-  const release =
-    (await gitee(`/releases/tags/${tag}`, undefined, true)) ||
-    (await gitee("/releases", {
-      tag_name: tag,
-      target_commitish: commit,
-      name: `line ${tag}`,
-      body: notes,
-      prerelease: "true",
-    }));
-  const giteeCommit = await gitee(`/commits/${tag}`);
-  if (giteeCommit.sha !== commit) throw new Error("Gitee 标签对应源码与本次构建不一致");
-  const attached = await gitee(`/releases/${release.id}/attach_files?per_page=100`);
+  let release;
+  let attached = [];
+  if (publishGitee) {
+    release =
+      (await gitee(`/releases/tags/${tag}`, undefined, true)) ||
+      (await gitee("/releases", {
+        tag_name: tag,
+        target_commitish: commit,
+        name: `line ${tag}`,
+        body: notes,
+        prerelease: "true",
+      }));
+    const giteeCommit = await gitee(`/commits/${tag}`);
+    if (giteeCommit.sha !== commit) throw new Error("Gitee 标签对应源码与本次构建不一致");
+    attached = await gitee(`/releases/${release.id}/attach_files?per_page=100`);
+  }
   const manifest = { tag, commit, publishedAt: new Date().toISOString(), files: [] };
   let restore =
     "# Gitee 分卷还原\n\n下载同一安装包的全部分卷到同一目录，再执行对应命令。还原后核对官网列出的 SHA-256。\n\n";
   for (const name of packages) {
     const path = join(directory, name);
-    const prepared = await giteeParts(path, join(directory, ".gitee"));
+    const prepared = publishGitee
+      ? await giteeParts(path, join(directory, ".gitee"))
+      : { size: (await stat(path)).size, sha256: await checksum(path), parts: [] };
+    if (!prepared.size) throw new Error("不能发布空制品");
     const parts = [];
     for (const part of prepared.parts) {
       let uploaded = attached.find((file) => file.name === part.name);
@@ -168,15 +176,17 @@ async function publish(tag, directory) {
     join(directory, "SHA256SUMS"),
     manifest.files.map((file) => `${file.sha256}  ${file.name}`).join("\n") + "\n",
   );
-  await writeFile(join(directory, "RESTORE.md"), restore);
-  for (const name of ["downloads.json", "SHA256SUMS", "RESTORE.md"]) {
+  if (publishGitee) await writeFile(join(directory, "RESTORE.md"), restore);
+  for (const name of ["downloads.json", "SHA256SUMS", ...(publishGitee ? ["RESTORE.md"] : [])]) {
     const path = join(directory, name);
     gh("release", "upload", tag, path, "--clobber");
     // 清单使用摘要文件名，失败重试不会覆盖用户已下载的数据。
-    const form = new FormData();
-    const content = await readFile(path);
-    form.set("file", new Blob([content]), `${createHash("sha256").update(content).digest("hex").slice(0, 12)}-${name}`);
-    await gitee(`/releases/${release.id}/attach_files`, form);
+    if (publishGitee) {
+      const form = new FormData();
+      const content = await readFile(path);
+      form.set("file", new Blob([content]), `${createHash("sha256").update(content).digest("hex").slice(0, 12)}-${name}`);
+      await gitee(`/releases/${release.id}/attach_files`, form);
+    }
   }
   gh("release", "edit", tag, "--draft=false", "--latest");
   console.log(`已发布 ${tag}，提交 ${commit}`);

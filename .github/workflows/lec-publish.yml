@@ -9,9 +9,12 @@ on:
       run_id:
         required: true
         type: string
+      gitee:
+        type: boolean
+        default: false
     secrets:
       GITEE_TOKEN:
-        required: true
+        required: false
   workflow_dispatch:
     inputs:
       tag:
@@ -20,6 +23,10 @@ on:
       run_id:
         description: '已完成三个平台构建的 LEC 制品发布运行 ID'
         required: true
+      gitee:
+        description: '同时同步到 Gitee'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -65,9 +72,10 @@ jobs:
           merge-multiple: true
           run-id: ${{ inputs.run_id }}
           github-token: ${{ github.token }}
-      - name: 发布双源制品与校验清单
+      - name: 发布制品与校验清单
         env:
           GH_TOKEN: ${{ github.token }}
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
           RELEASE_TAG: ${{ inputs.tag }}
+          PUBLISH_GITEE: ${{ inputs.gitee }}
         run: node script/lec-release.mjs "$RELEASE_TAG" dist

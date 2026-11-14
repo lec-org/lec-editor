@@ -8,9 +8,13 @@ on:
         required: true
         default: lec-v1.28.1
       publish:
-        description: "构建成功后发布到 GitHub 和 Gitee"
+        description: "构建成功后发布到 GitHub"
         type: boolean
         default: true
+      gitee:
+        description: "同时同步到 Gitee"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -38,12 +42,12 @@ jobs:
         env:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
           RELEASE_TAG: ${{ inputs.tag }}
-          PUBLISH: ${{ inputs.publish }}
+          PUBLISH_GITEE: ${{ inputs.publish && inputs.gitee }}
         run: |
           [[ "$RELEASE_TAG" =~ ^lec-v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]
           node --test script/lec-release.test.mjs
           python3 -m unittest discover -s script -p 'test_lec_toolchain.py'
-          if [ "$PUBLISH" = true ]; then
+          if [ "$PUBLISH_GITEE" = true ]; then
             node --input-type=module <<'JS'
           try {
             if (!process.env.GITEE_TOKEN) throw new Error('缺少 GITEE_TOKEN');
@@ -143,5 +147,6 @@ jobs:
     with:
       tag: ${{ inputs.tag }}
       run_id: ${{ github.run_id }}
+      gitee: ${{ inputs.gitee }}
     secrets:
       GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}

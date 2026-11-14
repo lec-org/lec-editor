@@ -6,6 +6,7 @@ import downloads from '../data/downloads.json';
 
 type Download = { name: string; size: number; sha256: string; github: string; gitee: { parts: { name: string; size: number; url: string }[]; command: string | null } };
 const files = downloads.files as Download[];
+const hasGitee = files.some(file => file.gitee.parts.length > 0);
 const platforms = [
   { name: 'macOS', arch: 'Apple Silicon · ARM64', extension: 'DMG', file: 'line-macos-aarch64.dmg', icon: '⌘' },
   { name: 'Windows', arch: 'Intel / AMD · x64', extension: 'EXE', file: 'line-windows-x86_64.exe', icon: '⊞' },
@@ -37,7 +38,7 @@ const size = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
           <h1 id="hero-title">让思路，<br /><span>落成代码。</span></h1>
           <p class="hero-description">少一点等待，多一点心流。<br />基于 Zed 的高性能编辑器社区构建，<br class="desktop-break" />为 LEC 的日常开发提供一个开源选择。</p>
           <div class="hero-actions"><Link href="#downloads">下载 line <span aria-hidden="true">↓</span></Link><a class="text-link" href="https://github.com/lec-org/lec-editor">在 GitHub 查看源码 <span aria-hidden="true">↗</span></a></div>
-          <p class="hero-note">macOS · Windows · Linux <span> / </span> GitHub & Gitee 双下载源</p>
+          <p class="hero-note">macOS · Windows · Linux <span> / </span> {hasGitee ? 'GitHub 与 Gitee 下载' : 'GitHub 下载'}</p>
         </div>
         <div class="editor-wrap">
           <div class="editor" aria-label="编辑器代码布局示意">
@@ -63,16 +64,16 @@ workspace.<span class="code-blue">open</span>();
       <section class="foundation" aria-label="技术基础"><span>站在开源的肩膀上</span><strong>Zed</strong><span>Rust 构建</span><span>GPUI 原生界面</span><a href="https://github.com/lec-org/lec-editor/blob/main/LICENSE-GPL">开放源代码 <span aria-hidden="true">↗</span></a></section>
       <section id="features" class="features" aria-labelledby="features-title">
         <div class="section-heading"><p class="eyebrow">STAY IN THE FLOW</p><h2 id="features-title">开发工具，回归开发本身。</h2><p>沿用 Zed 的编辑基础，把注意力留给手上的项目。</p></div>
-        <div class="feature-grid"><article><span class="feature-number">01 / PERFORMANCE</span><h3>原生性能，跟上思路</h3><p>Rust 与 GPUI 构建的编辑体验。代码导航、搜索与多文件编辑，在同一个工作区里完成。</p></article><article><span class="feature-number">02 / WORKSPACE</span><h3>熟悉的工具，就在手边</h3><p>语言服务、集成终端和 Git 工作流。打开已有项目，继续使用熟悉的开发工具。</p></article><article><span class="feature-number">03 / OPEN SOURCE</span><h3>从源码，到你手中的安装包</h3><p>源码和构建流程公开。GitHub 与 Gitee 提供相同版本的制品，可通过 SHA-256 核对文件完整性。</p></article></div>
+        <div class="feature-grid"><article><span class="feature-number">01 / PERFORMANCE</span><h3>原生性能，跟上思路</h3><p>Rust 与 GPUI 构建的编辑体验。代码导航、搜索与多文件编辑，在同一个工作区里完成。</p></article><article><span class="feature-number">02 / WORKSPACE</span><h3>熟悉的工具，就在手边</h3><p>语言服务、集成终端和 Git 工作流。打开已有项目，继续使用熟悉的开发工具。</p></article><article><span class="feature-number">03 / OPEN SOURCE</span><h3>从源码，到你手中的安装包</h3><p>源码和构建流程公开。安装包附带 SHA-256 校验值，方便核对文件完整性。</p></article></div>
       </section>
       <section id="downloads" class="downloads" aria-labelledby="download-title">
-        <div class="download-heading"><div><p class="eyebrow">YOUR NEXT WORKSPACE</p><h2 id="download-title">准备好，写下一行。</h2><p>选择你的系统和下载源。</p></div><span class:list={['release-badge', !downloads.tag && 'pending']}><span class="status-dot"></span>{downloads.tag || '首个版本构建中'}</span></div>
+        <div class="download-heading"><div><p class="eyebrow">YOUR NEXT WORKSPACE</p><h2 id="download-title">准备好，写下一行。</h2><p>选择你的系统，下载安装包。</p></div><span class:list={['release-badge', !downloads.tag && 'pending']}><span class="status-dot"></span>{downloads.tag || '首个版本构建中'}</span></div>
         <div class="platform-grid">{platforms.map(platform => {
           const file = files.find(file => file.name === platform.file);
-          return <article class="platform"><span class="platform-icon" aria-hidden="true">{platform.icon}</span><div class="platform-title"><h3>{platform.name}</h3><span>{platform.extension}</span></div><p>{platform.arch}</p>{file ? <><span class="file-size">{size(file.size)}</span><Link href={file.github}>从 GitHub 下载 <span aria-hidden="true">↓</span></Link><details class="gitee-download"><summary>从 Gitee 下载 <span aria-hidden="true">↓</span></summary><div class="gitee-parts"><p>{file.gitee.parts.length > 1 ? '受 Gitee 附件大小限制，请下载全部分卷，再按下方命令还原。' : '与 GitHub 相同的安装包。'}</p>{file.gitee.parts.map((part, index) => <a href={part.url}>{file.gitee.parts.length > 1 ? `下载分卷 ${index + 1} / ${file.gitee.parts.length}` : '下载安装包'} <span>↓</span></a>)}{file.gitee.command && <><p>在下载目录执行：</p><pre tabindex="0">{file.gitee.command}</pre></>}</div></details><details class="checksum"><summary>SHA-256 校验值</summary><code>{file.sha256}</code></details></> : <div class="awaiting"><span>安装包构建中</span><a href="https://github.com/lec-org/lec-editor/actions/workflows/lec-release.yml">查看构建进度 ↗</a></div>}</article>;
+          return <article class="platform"><span class="platform-icon" aria-hidden="true">{platform.icon}</span><div class="platform-title"><h3>{platform.name}</h3><span>{platform.extension}</span></div><p>{platform.arch}</p>{file ? <><span class="file-size">{size(file.size)}</span><Link href={file.github}>从 GitHub 下载 <span aria-hidden="true">↓</span></Link>{file.gitee.parts.length > 0 && <details class="gitee-download"><summary>从 Gitee 下载 <span aria-hidden="true">↓</span></summary><div class="gitee-parts"><p>{file.gitee.parts.length > 1 ? '受 Gitee 附件大小限制，请下载全部分卷，再按下方命令还原。' : '与 GitHub 相同的安装包。'}</p>{file.gitee.parts.map((part, index) => <a href={part.url}>{file.gitee.parts.length > 1 ? `下载分卷 ${index + 1} / ${file.gitee.parts.length}` : '下载安装包'} <span>↓</span></a>)}{file.gitee.command && <><p>在下载目录执行：</p><pre tabindex="0">{file.gitee.command}</pre></>}</div></details>}<details class="checksum"><summary>SHA-256 校验值</summary><code>{file.sha256}</code></details></> : <div class="awaiting"><span>安装包构建中</span><a href="https://github.com/lec-org/lec-editor/actions/workflows/lec-release.yml">查看构建进度 ↗</a></div>}</article>;
         })}</div>
         <p class="download-notice">line 基于 Zed，面向初学 C/C++ 的新生。macOS 安装包仅本地签名、未经 Apple 公证，Windows 安装包尚未签名。版本更新请回到此页下载。</p>
-        <div class="release-links"><a href="https://github.com/lec-org/lec-editor/releases">GitHub 发行记录 ↗</a><a href="https://gitee.com/lec-org/lec-editor/releases">Gitee 发行记录 ↗</a>{downloads.commit && <a href={`https://github.com/lec-org/lec-editor/tree/${downloads.commit}`}>本版本源码 ↗</a>}</div>
+        <div class="release-links"><a href="https://github.com/lec-org/lec-editor/releases">GitHub 发行记录 ↗</a>{hasGitee && <a href="https://gitee.com/lec-org/lec-editor/releases">Gitee 发行记录 ↗</a>}{downloads.commit && <a href={`https://github.com/lec-org/lec-editor/tree/${downloads.commit}`}>本版本源码 ↗</a>}</div>
       </section>
     </Container>
   </main>
