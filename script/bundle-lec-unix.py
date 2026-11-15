@@ -61,7 +61,7 @@ def bundle(skip_build):
             resources = stage / "Contents/Resources"
             # 工具链同时包含原生程序和 Python 源码，放入资源目录，保留运行器旁的查找路径。
             shutil.move(str(binaries / "toolchains"), str(resources / "toolchains"))
-            (binaries / "toolchains").symlink_to("../Resources/toolchains", target_is_directory=True)
+            (binaries / "toolchains").symlink_to(Path("../Resources/toolchains"), target_is_directory=True)
             iconset = Path(temporary) / "LECEditor.iconset"
             iconset.mkdir()
             for name, source in [("icon_512x512.png", "app-icon.png"),
