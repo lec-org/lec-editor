@@ -19,7 +19,8 @@ def check(runner):
         raise ValueError("安装包缺少内置调试器")
     with tempfile.TemporaryDirectory(prefix="line 调试验收 ") as temporary:
         directory = Path(temporary).resolve()
-        environment = dict(os.environ, PATH="", SDKROOT="/line-no-sdk", DEVELOPER_DIR="/line-no-xcode")
+        environment = dict(os.environ, PATH="", SDKROOT="/line-no-sdk", DEVELOPER_DIR="/line-no-xcode",
+                           PYTHONDONTWRITEBYTECODE="1")
         for extension in ["c", "cpp"]:
             source = directory / f"中文 断点.{extension}"
             source.write_text('#include <stdio.h>\nint main(void) {\n    int value = 1;\n    value += 2;\n    value *= 3;\n    printf("VALUE=%d\\n", value);\n    return value == 9 ? 0 : 1;\n}\n', encoding="utf-8")

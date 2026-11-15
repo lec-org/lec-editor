@@ -59,6 +59,9 @@ def bundle(skip_build):
             str(binaries / "toolchains/codelldb"))
         if system == "macos":
             resources = stage / "Contents/Resources"
+            # 工具链同时包含原生程序和 Python 源码，放入资源目录，保留运行器旁的查找路径。
+            shutil.move(str(binaries / "toolchains"), str(resources / "toolchains"))
+            (binaries / "toolchains").symlink_to("../Resources/toolchains", target_is_directory=True)
             iconset = Path(temporary) / "LECEditor.iconset"
             iconset.mkdir()
             for name, source in [("icon_512x512.png", "app-icon.png"),
@@ -78,10 +81,13 @@ def bundle(skip_build):
                                                "CFBundleTypeRole": "Editor", "LSHandlerRank": "Alternate",
                                                "CFBundleTypeExtensions": ["c", "cpp", "cc", "cxx", "h", "hpp"]}],
                 }, stream)
-            # 保留官方调试辅助程序的现有签名；强制重签会使其调试权限失效。
-            run("codesign", "--deep", "--sign", "-", str(stage))
+            # 只签自己的程序，避免重签第三方辅助程序或将 Python 源码误当作代码对象。
+            run("codesign", "--force", "--sign", "-", str(binaries / "lec-run"))
+            run("codesign", "--force", "--sign", "-", str(stage))
         run(sys.executable, "script/lec-toolchain.py", "check", str(binaries / "lec-run"))
         run(sys.executable, "script/check-lec-debugger.py", str(binaries / "lec-run"))
+        if system == "macos":
+            run("codesign", "--verify", "--strict", str(stage))
         dist = ROOT / "dist"
         dist.mkdir(exist_ok=True)
         if system == "macos":

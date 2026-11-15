@@ -67,6 +67,8 @@ class ToolchainTests(unittest.TestCase):
                         self.assertEqual(info["CFBundleIdentifier"], "org.lec.Editor")
                         self.assertEqual(info["CFBundleDisplayName"], "line")
                         self.assertTrue((app / "Contents/Resources/THIRD_PARTY.md").exists())
+                        self.assertTrue((app / "Contents/MacOS/toolchains").is_symlink())
+                        self.assertTrue((app / "Contents/Resources/toolchains/codelldb/adapter/codelldb").is_file())
                         self.assertEqual(len(checked), 1)
 
                 with patch.object(BUNDLE, "ROOT", root), patch.object(BUNDLE.platform, "system", return_value=system), \

@@ -414,6 +414,10 @@ impl DebugAdapter for CodeLldbDebugAdapter {
             }
         }
 
+        let mut environment = user_env.unwrap_or_default();
+        // 内嵌 Python 生成字节码会改写安装包，导致 macOS 资源签名失效。
+        environment.insert("PYTHONDONTWRITEBYTECODE".into(), "1".into());
+
         Ok(DebugAdapterBinary {
             command: Some(command.unwrap()),
             // 单独打开源文件时，工作树根路径是文件，不能作为调试进程的工作目录。
@@ -447,7 +451,7 @@ impl DebugAdapter for CodeLldbDebugAdapter {
             request_args: self
                 .request_args(delegate, json_config, &config.label)
                 .await?,
-            envs: user_env.unwrap_or_default(),
+            envs: environment,
             connection: None,
         })
     }

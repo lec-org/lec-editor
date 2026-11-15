@@ -293,6 +293,7 @@ pub fn app_menus(cx: &mut App) -> Vec<Menu> {
             items: vec![
                 MenuItem::action(t!("Run Current File"), zed_actions::RunCurrentFile),
                 MenuItem::action(t!("Debug Current File"), zed_actions::DebugCurrentFile),
+                MenuItem::action(t!("Toggle Breakpoint"), editor::actions::ToggleBreakpoint),
                 MenuItem::action(t!("Continue Program"), debugger_ui::Continue),
                 MenuItem::action(t!("Step Over"), debugger_ui::StepOver),
                 MenuItem::action(t!("Step In"), debugger_ui::StepInto),
