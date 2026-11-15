@@ -12457,6 +12457,7 @@ dependencies = [
  "fuzzy",
  "git",
  "gpui",
+ "i18n",
  "language",
  "log",
  "lsp",
@@ -14798,6 +14799,7 @@ dependencies = [
  "fuzzy_nucleo",
  "gpui",
  "http_client",
+ "i18n",
  "indoc",
  "language",
  "log",
@@ -22435,7 +22437,7 @@ dependencies = [
 
 [[package]]
 name = "zed"
-version = "1.28.1"
+version = "1.28.2"
 dependencies = [
  "acp_thread",
  "action_log",

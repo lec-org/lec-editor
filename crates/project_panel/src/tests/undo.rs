@@ -393,7 +393,7 @@ async fn create_undo_redo(cx: &mut gpui::TestAppContext) {
     cx.fs.write(Path::new(&path), b"Hello!").await.unwrap();
 
     cx.undo().await;
-    cx.answer("Trash");
+    cx.answer("Move to Trash");
     cx.assert_not_exists("c.txt");
 
     cx.redo().await;
@@ -412,7 +412,7 @@ async fn undo_create_cancel_trash(cx: &mut gpui::TestAppContext) {
     cx.assert_exists("c.txt");
 
     cx.undo().await;
-    cx.answer("Trash");
+    cx.answer("Move to Trash");
     cx.assert_not_exists("c.txt");
 }
 
@@ -447,7 +447,7 @@ async fn create_dir_undo(cx: &mut gpui::TestAppContext) {
     cx.create_directory("new_dir").await;
     cx.assert_exists("new_dir");
     cx.undo().await;
-    cx.answer("Trash");
+    cx.answer("Move to Trash");
     cx.assert_not_exists("new_dir");
 }
 
@@ -512,7 +512,7 @@ async fn two_sequential_undos(cx: &mut gpui::TestAppContext) {
     cx.assert_fs_state_is(&["b.txt", "x.txt", "y.txt"]);
 
     cx.undo().await;
-    cx.answer("Trash");
+    cx.answer("Move to Trash");
     cx.assert_fs_state_is(&["b.txt", "x.txt"]);
 
     cx.undo().await;
@@ -540,7 +540,7 @@ async fn trash_undo_redo(cx: &mut gpui::TestAppContext) {
     cx.assert_fs_state_is(&["a.txt", "b.txt"]);
 
     cx.redo().await;
-    cx.answer("Trash");
+    cx.answer("Move to Trash");
     cx.assert_fs_state_is(&[]);
 }
 
@@ -572,7 +572,7 @@ async fn trash_directory_undo_redo(cx: &mut gpui::TestAppContext) {
     );
 
     cx.redo().await;
-    cx.answer("Trash");
+    cx.answer("Move to Trash");
     cx.assert_fs_state_is(&["a.txt"]);
 }
 
@@ -707,7 +707,7 @@ async fn cancel_partial_trash_batch(cx: &mut gpui::TestAppContext) {
     cx.assert_fs_state_is(&["a.txt", "b.txt"]);
 
     cx.redo().await;
-    cx.answer("Trash");
+    cx.answer("Move to Trash");
     cx.assert_fs_state_is(&[]);
 }
 

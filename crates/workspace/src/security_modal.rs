@@ -197,9 +197,9 @@ impl Render for SecurityModal {
                                 .color(Color::Muted),
                             )
                             .child(
-                                Label::new(
+                                Label::new(t!(
                                     "Review .zed/settings.json for any extensions or commands configured by this project.",
-                                )
+                                ))
                                 .color(Color::Muted),
                             ),
                     )

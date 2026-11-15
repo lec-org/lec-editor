@@ -62,9 +62,10 @@ use std::{
 use svg_preview::svg_preview_view::SvgPreviewView;
 use theme_settings::ThemeSettings;
 use ui::{
-    ContextMenu, DecoratedIcon, IconDecoration, IconDecorationKind, IndentGuideColors,
-    IndentGuideLayout, Indicator, KeyBinding, ListItem, ListItemSpacing, ProjectEmptyState,
-    ScrollAxes, ScrollableHandle, Scrollbars, StickyCandidate, Tooltip, WithScrollbar, prelude::*,
+    ContextMenu, DecoratedIcon, Divider, DividerColor, IconDecoration, IconDecorationKind,
+    IndentGuideColors, IndentGuideLayout, Indicator, KeyBinding, ListItem, ListItemSpacing,
+    ProjectEmptyState, ScrollAxes, ScrollableHandle, Scrollbars, StickyCandidate, Tooltip,
+    WithScrollbar, prelude::*,
 };
 use util::{
     ResultExt, TryFutureExt,
@@ -113,7 +114,7 @@ struct State {
     temporarily_unfolded_pending_state: Option<TemporaryUnfoldedPendingState>,
     unfolded_dir_ids: HashSet<ProjectEntryId>,
     expanded_dir_ids: HashMap<WorktreeId, Vec<ProjectEntryId>>,
-    /// The "Empty" rows shown under open folders with nothing in them, keyed to their folder.
+    /// 操作行不是真实文件，导航和拖放必须映射到所属文件夹。
     empty_folder_rows: HashMap<ProjectEntryId, ProjectEntryId>,
 }
 
@@ -1224,7 +1225,7 @@ impl ProjectPanel {
                             menu.action(t!("Open Markdown Preview"), Box::new(OpenMarkdownPreview))
                         })
                         .when(is_svg, |menu| {
-                            menu.action("Open SVG Preview", Box::new(OpenSvgPreview))
+                            menu.action(t!("Open SVG Preview"), Box::new(OpenSvgPreview))
                         })
                         .when(is_dir, |menu| {
                             menu.action(t!("Search Inside"), Box::new(NewSearchInDirectory))
@@ -1240,7 +1241,7 @@ impl ProjectPanel {
                                 )
                             })
                             .when(is_local, |menu| {
-                                menu.action("Open in Default App", Box::new(OpenWithSystem))
+                                menu.action(t!("Open in Default App"), Box::new(OpenWithSystem))
                             })
                             .action(t!("Open in Terminal"), Box::new(OpenInTerminal))
                             .when(is_markdown, |menu| {
@@ -1250,7 +1251,7 @@ impl ProjectPanel {
                                 )
                             })
                             .when(is_svg, |menu| {
-                                menu.action("Open SVG Preview", Box::new(OpenSvgPreview))
+                                menu.action(t!("Open SVG Preview"), Box::new(OpenSvgPreview))
                             })
                             .when(is_dir, |menu| {
                                 menu.separator()
@@ -1289,7 +1290,7 @@ impl ProjectPanel {
                                     .action(t!("Download..."), Box::new(DownloadFromRemote))
                             })
                             .separator()
-                            .action("Copy Path", Box::new(zed_actions::workspace::CopyPath))
+                            .action(t!("Copy Path"), Box::new(zed_actions::workspace::CopyPath))
                             .action(
                                 t!("Copy Relative Path"),
                                 Box::new(zed_actions::workspace::CopyRelativePath),
@@ -1325,10 +1326,10 @@ impl ProjectPanel {
                                 menu.separator().action(t!("Rename"), Box::new(Rename))
                             })
                             .when(!is_root && !is_collab, |menu| {
-                                menu.action("Trash", Box::new(Trash { skip_prompt: false }))
+                                menu.action(t!("Trash"), Box::new(Trash { skip_prompt: false }))
                             })
                             .when(!is_root, |menu| {
-                                menu.action("Delete", Box::new(Delete { skip_prompt: false }))
+                                menu.action(t!("Delete"), Box::new(Delete { skip_prompt: false }))
                             })
                             .when(!is_collab && is_root, |menu| {
                                 menu.separator()
@@ -1950,22 +1951,27 @@ impl ProjectPanel {
             let (mut worktree_ix, mut entry_ix, _) = self
                 .index_for_selection(previous_selection)
                 .unwrap_or_default();
-            if entry_ix > 0 {
-                entry_ix -= 1;
-            } else if worktree_ix > 0 {
-                worktree_ix -= 1;
-                entry_ix = self.state.visible_entries[worktree_ix].entries.len() - 1;
-            } else {
-                return;
-            }
-            let lands_on_empty_folder_row = self
-                .state
-                .visible_entries
-                .get(worktree_ix)
-                .and_then(|visible| visible.entries.get(entry_ix))
-                .is_some_and(|entry| self.state.is_empty_folder_row(entry.id));
-            if lands_on_empty_folder_row {
-                entry_ix = entry_ix.saturating_sub(1);
+            loop {
+                if entry_ix > 0 {
+                    entry_ix -= 1;
+                } else if worktree_ix > 0 {
+                    worktree_ix -= 1;
+                    entry_ix = self.state.visible_entries[worktree_ix]
+                        .entries
+                        .len()
+                        .saturating_sub(1);
+                } else {
+                    return;
+                }
+                if self
+                    .state
+                    .visible_entries
+                    .get(worktree_ix)
+                    .and_then(|visible| visible.entries.get(entry_ix))
+                    .is_some_and(|entry| !self.state.is_empty_folder_row(entry.id))
+                {
+                    break;
+                }
             }
 
             let VisibleEntriesForWorktree {
@@ -2509,6 +2515,39 @@ impl ProjectPanel {
 
     fn new_file(&mut self, _: &NewFile, window: &mut Window, cx: &mut Context<Self>) {
         self.add_entry(false, window, cx)
+    }
+
+    fn new_source_file(
+        &mut self,
+        worktree_id: WorktreeId,
+        folder_id: ProjectEntryId,
+        filename: &str,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.project.read(cx).is_read_only(cx) {
+            return;
+        }
+        self.selection = Some(SelectedEntry {
+            worktree_id,
+            entry_id: folder_id,
+        });
+        // 按钮针对空文件夹本身，不沿用折叠路径中先前选中的祖先目录。
+        if let Some(ancestors) = self.state.ancestors.get_mut(&folder_id) {
+            ancestors.current_ancestor_depth = 0;
+        }
+        self.add_entry(false, window, cx);
+        if self.state.edit_state.as_ref().is_some_and(|state| {
+            state.is_new_entry() && state.worktree_id == worktree_id && state.entry_id == folder_id
+        }) {
+            self.filename_editor.update(cx, |editor, cx| {
+                editor.set_text(filename, window, cx);
+                let stem_end = filename.rfind('.').unwrap_or(filename.len());
+                editor.change_selections(Default::default(), window, cx, |selections| {
+                    selections.select_ranges([MultiBufferOffset(0)..MultiBufferOffset(stem_end)])
+                });
+            });
+        }
     }
 
     fn new_directory(&mut self, _: &NewDirectory, window: &mut Window, cx: &mut Context<Self>) {
@@ -4756,8 +4795,16 @@ impl ProjectPanel {
         expanded_dir_ids: &[ProjectEntryId],
         empty_folder_rows: &mut HashMap<ProjectEntryId, ProjectEntryId>,
     ) -> Vec<GitEntry> {
-        let Ok(row_name) = RelPath::from_unix_str("\0empty") else {
-            return entries;
+        let row_names = match ["\0empty-c", "\0empty-or", "\0empty-cpp"]
+            .into_iter()
+            .map(RelPath::from_unix_str)
+            .collect::<std::result::Result<Vec<_>, _>>()
+        {
+            Ok(names) => names,
+            Err(error) => {
+                log::error!("无法构造空文件夹操作行：{error}");
+                return entries;
+            }
         };
         let mut with_rows = Vec::with_capacity(entries.len());
         let mut entries = entries.into_iter().peekable();
@@ -4768,13 +4815,29 @@ impl ProjectPanel {
                     next.path != entry.path && next.path.starts_with(&entry.path)
                 });
             if is_empty_open_folder {
-                let mut row =
-                    Self::create_new_git_entry(&entry, entry.git_summary, EntryKind::File);
-                row.entry.id = ProjectEntryId::from_usize(usize::MAX - 1 - entry.id.to_usize());
-                row.entry.path = entry.path.join(row_name).into();
-                empty_folder_rows.insert(row.id, entry.id);
-                with_rows.push(entry);
-                with_rows.push(row);
+                // 固定高度列表中，两个按钮和分隔线各占一行，避免覆盖后面的文件。
+                let Some(first_row_id) =
+                    entry
+                        .id
+                        .to_usize()
+                        .checked_mul(row_names.len())
+                        .and_then(|offset| {
+                            usize::MAX.checked_sub(offset)?.checked_sub(row_names.len())
+                        })
+                else {
+                    log::error!("空文件夹操作行 ID 超出范围");
+                    with_rows.push(entry);
+                    continue;
+                };
+                with_rows.push(entry.clone());
+                for (index, row_name) in row_names.iter().enumerate() {
+                    let mut row =
+                        Self::create_new_git_entry(&entry, entry.git_summary, EntryKind::File);
+                    row.entry.id = ProjectEntryId::from_usize(first_row_id + index);
+                    row.entry.path = entry.path.join(row_name).into();
+                    empty_folder_rows.insert(row.id, entry.id);
+                    with_rows.push(row);
+                }
             } else {
                 with_rows.push(entry);
             }
@@ -6317,6 +6380,7 @@ impl ProjectPanel {
         let settings = ProjectPanelSettings::get_global(cx);
         let item_colors = get_item_color(false, cx);
         let worktree_id = details.worktree_id;
+        let is_read_only = self.project.read(cx).is_read_only(cx);
         let id: ElementId = (row_id.to_proto() as usize).into();
         let is_highlighted = self
             .drag_target_entry
@@ -6423,11 +6487,42 @@ impl ProjectPanel {
                     })
                     .selectable(false)
                     .child(
-                        h_flex().h_6().child(
-                            Label::new(t!("Empty"))
-                                .single_line()
-                                .italic()
-                                .color(Color::Placeholder),
+                        h_flex().w_full().h_6().items_center().px_2().child(
+                            match details.path.file_name() {
+                                Some("\0empty-c") | Some("\0empty-cpp") => {
+                                    let is_cpp = details.path.file_name() == Some("\0empty-cpp");
+                                    let (button_id, label, filename) = if is_cpp {
+                                        ("create-cpp-file", t!("Create CPP File"), "main.cpp")
+                                    } else {
+                                        ("create-c-file", t!("Create C File"), "main.c")
+                                    };
+                                    Button::new(button_id, label)
+                                        .full_width()
+                                        .disabled(is_read_only)
+                                        .on_click(cx.listener(move |this, _, window, cx| {
+                                            cx.stop_propagation();
+                                            this.new_source_file(
+                                                worktree_id,
+                                                folder_id,
+                                                filename,
+                                                window,
+                                                cx,
+                                            );
+                                        }))
+                                        .into_any_element()
+                                }
+                                _ => h_flex()
+                                    .w_full()
+                                    .gap_2()
+                                    .child(Divider::horizontal().color(DividerColor::Border))
+                                    .child(
+                                        Label::new(t!("or"))
+                                            .size(LabelSize::XSmall)
+                                            .color(Color::Muted),
+                                    )
+                                    .child(Divider::horizontal().color(DividerColor::Border))
+                                    .into_any_element(),
+                            },
                         ),
                     ),
             )

@@ -21,6 +21,8 @@
   "Copy File Permalink": "复制文件永久链接",
   "Copy Path": "复制路径",
   "Copy Relative Path": "复制相对路径",
+  "Create C File": "创建 C 文件",
+  "Create CPP File": "创建 CPP 文件",
   "Created": "创建时间",
   "Created an excluded directory at {path}.\nAlter `file_scan_exclusions` in the settings to show it in the panel": "已在 {path} 创建一个被排除的目录。\n修改设置中的 `file_scan_exclusions` 即可在面板中显示它",
   "Cut": "剪切",

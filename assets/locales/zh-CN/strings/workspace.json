@@ -88,6 +88,7 @@
   "Return to Onboarding": "返回新手引导",
   "Reveal In Project Panel": "在项目面板中显示",
   "Review .wu/settings.json for any extensions or commands configured by this project.": "请检查 .wu/settings.json 中此项目配置的扩展或命令。",
+  "Review .zed/settings.json for any extensions or commands configured by this project.": "请检查 .zed/settings.json 中此项目配置的扩展或命令。",
   "Right dock": "右侧停靠栏",
   "Save": "保存",
   "Save all": "全部保存",

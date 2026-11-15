@@ -1470,7 +1470,7 @@ async fn test_adding_directory_via_file(cx: &mut gpui::TestAppContext) {
 
     select_path(&panel, "root1", cx);
     assert_eq!(
-        visible_entries_as_strings(&panel, 0..10, cx),
+        visible_entries_as_strings(&panel, 0..usize::MAX, cx),
         &["v root1  <== selected", "    > .git", "      .dockerignore",]
     );
 
@@ -1482,7 +1482,7 @@ async fn test_adding_directory_via_file(cx: &mut gpui::TestAppContext) {
         assert!(panel.filename_editor.read(cx).is_focused(window));
     });
     assert_eq!(
-        visible_entries_as_strings(&panel, 0..10, cx),
+        visible_entries_as_strings(&panel, 0..usize::MAX, cx),
         &[
             "v root1",
             "    > .git",
@@ -1500,7 +1500,7 @@ async fn test_adding_directory_via_file(cx: &mut gpui::TestAppContext) {
     });
 
     assert_eq!(
-        visible_entries_as_strings(&panel, 0..10, cx),
+        visible_entries_as_strings(&panel, 0..usize::MAX, cx),
         &[
             "v root1",
             "    > .git",
@@ -1512,7 +1512,7 @@ async fn test_adding_directory_via_file(cx: &mut gpui::TestAppContext) {
     confirm.await.unwrap();
     cx.run_until_parked();
     assert_eq!(
-        visible_entries_as_strings(&panel, 0..10, cx),
+        visible_entries_as_strings(&panel, 0..usize::MAX, cx),
         &[
             "v root1",
             "    > .git",
@@ -1534,7 +1534,7 @@ async fn test_adding_directory_via_file(cx: &mut gpui::TestAppContext) {
     confirm.await.unwrap();
     cx.run_until_parked();
     assert_eq!(
-        visible_entries_as_strings(&panel, 0..10, cx),
+        visible_entries_as_strings(&panel, 0..usize::MAX, cx),
         &[
             "v root1",
             "    > .git",
@@ -1559,7 +1559,7 @@ async fn test_adding_directory_via_file(cx: &mut gpui::TestAppContext) {
         confirm.await.unwrap();
         cx.run_until_parked();
         assert_eq!(
-            visible_entries_as_strings(&panel, 0..10, cx),
+            visible_entries_as_strings(&panel, 0..usize::MAX, cx),
             &[
                 "v root1",
                 "    > .git",
@@ -1569,6 +1569,57 @@ async fn test_adding_directory_via_file(cx: &mut gpui::TestAppContext) {
                 "      .dockerignore",
             ]
         );
+    }
+}
+
+#[gpui::test]
+async fn test_empty_folder_source_file_creation(cx: &mut gpui::TestAppContext) {
+    init_test_with_editor(cx);
+    let fs = FakeFs::new(cx.executor());
+    fs.insert_tree("/练习", json!({ "C作业": {}, "CPP作业": {}, "其他": {} }))
+        .await;
+    let project = Project::test(fs.clone(), ["/练习".as_ref()], cx).await;
+    let (window, panel) = create_drag_test_panel(&project, cx);
+    let cx = &mut VisualTestContext::from_window(window, cx);
+
+    for (folder, filename) in [("C作业", "main.c"), ("CPP作业", "main.cpp")] {
+        let folder_id =
+            find_project_entry(&panel, &format!("练习/{folder}"), cx).expect("空文件夹应存在");
+        select_path(&panel, "练习/其他", cx);
+        let worktree_id = project.read_with(cx, |project, cx| {
+            project
+                .worktree_id_for_entry(folder_id, cx)
+                .expect("文件夹应属于项目")
+        });
+        panel.update_in(cx, |panel, window, cx| {
+            panel.new_source_file(worktree_id, folder_id, filename, window, cx);
+            assert_eq!(panel.filename_editor.read(cx).text(cx), filename);
+        });
+        cx.run_until_parked();
+        cx.update(|window, cx| window.draw(cx).clear(cx));
+        panel.update_in(cx, |panel, window, cx| {
+            assert!(panel.filename_editor.read(cx).is_focused(window));
+            panel.cancel(&Default::default(), window, cx);
+        });
+        assert!(find_project_entry(&panel, &format!("练习/{folder}/{filename}"), cx).is_none());
+        let confirm = panel.update_in(cx, |panel, window, cx| {
+            panel.new_source_file(worktree_id, folder_id, filename, window, cx);
+            panel
+                .confirm_edit(true, window, cx)
+                .expect("应能确认创建源文件")
+        });
+        confirm.await.expect("源文件应创建成功");
+        cx.run_until_parked();
+        assert!(find_project_entry(&panel, &format!("练习/{folder}/{filename}"), cx).is_some());
+        assert!(find_project_entry(&panel, &format!("练习/其他/{filename}"), cx).is_none());
+        panel.update_in(cx, |panel, window, cx| {
+            panel.new_source_file(worktree_id, folder_id, filename, window, cx);
+            assert!(
+                panel.confirm_edit(true, window, cx).is_none(),
+                "不能覆盖同名文件"
+            );
+            panel.cancel(&Default::default(), window, cx);
+        });
     }
 }
 
@@ -1598,12 +1649,21 @@ async fn test_open_empty_folder_shows_an_empty_row(cx: &mut gpui::TestAppContext
 
     select_path(&panel, "root/empty", cx);
     toggle_expand_dir(&panel, "root/empty", cx);
+    panel.read_with(cx, |panel, _| {
+        assert_eq!(
+            panel.state.empty_folder_rows.len(),
+            3,
+            "两个按钮和分隔线应有独立的操作行"
+        );
+    });
     assert_eq!(
         visible_entries_with_empty_rows(&panel, 0..10, cx),
         &[
             "v root",
             "    v empty  <== selected",
-            "          <empty>",
+            "          <create-c>",
+            "          <or>",
+            "          <create-cpp>",
             "    > full",
             "      z.txt",
         ]
@@ -1622,7 +1682,7 @@ async fn test_open_empty_folder_shows_an_empty_row(cx: &mut gpui::TestAppContext
         panel.select_next(&Default::default(), window, cx);
     });
     assert_eq!(
-        visible_entries_with_empty_rows(&panel, 0..10, cx)[3],
+        visible_entries_with_empty_rows(&panel, 0..10, cx)[5],
         "    > full  <== selected",
         "moving down skips the empty row"
     );
@@ -1730,7 +1790,9 @@ async fn test_last_entry_skips_a_trailing_empty_row(cx: &mut gpui::TestAppContex
             "v root",
             "    > a",
             "    v zz  <== selected",
-            "          <empty>",
+            "          <create-c>",
+            "          <or>",
+            "          <create-cpp>",
         ]
     );
 }
@@ -4613,7 +4675,7 @@ async fn test_collapse_selected_entry_does_not_scroll_visible_parent(cx: &mut Te
                 "f.rs": "",
             }
         }),
-        size(px(800.), px(160.)),
+        size(px(800.), px(120.)),
         cx,
     )
     .await;
@@ -4646,6 +4708,15 @@ async fn test_collapse_selected_entry_does_not_scroll_visible_parent(cx: &mut Te
             "          f.rs",
         ]
     );
+    // 明确布置父条目贴住视口底部的场景，不依赖光标滚动命令的居中偏移。
+    panel.update(cx, |panel, _| {
+        let parent_bounds = entry_row_bounds(panel, parent_id);
+        let viewport = panel.scroll_handle.viewport();
+        let offset = panel.scroll_handle.offset();
+        panel
+            .scroll_handle
+            .set_offset(offset - point(px(0.), parent_bounds.bottom() - viewport.bottom()));
+    });
     let offset_before = panel.read_with(cx, |panel, _| {
         let parent_bounds = entry_row_bounds(panel, parent_id);
         let viewport = panel.scroll_handle.viewport();
@@ -11946,7 +12017,13 @@ fn entries_as_strings(
         panel.for_each_visible_entry(range, window, cx, &mut |project_entry, details, _, _| {
             if details.is_empty_folder_row {
                 if show_empty_folder_rows {
-                    result.push(format!("{}  <empty>", "    ".repeat(details.depth)));
+                    let action = match details.path.file_name() {
+                        Some("\0empty-c") => "create-c",
+                        Some("\0empty-or") => "or",
+                        Some("\0empty-cpp") => "create-cpp",
+                        _ => "empty",
+                    };
+                    result.push(format!("{}  <{action}>", "    ".repeat(details.depth)));
                 }
                 return;
             }
@@ -13011,9 +13088,13 @@ async fn test_focus_follows_mouse_into_blank_area(cx: &mut gpui::TestAppContext)
         );
     });
 
-    // Hover over the blank space below the last entry in the project panel,
-    // which lives in the right dock by default.
-    cx.simulate_mouse_move(point(px(1800.), px(600.)), None, Modifiers::none());
+    // 按实际面板位置选择下方空白区域，兼容左侧和右侧停靠。
+    cx.update(|window, cx| window.draw(cx).clear(cx));
+    let position = panel.read_with(cx, |panel, _| {
+        let viewport = panel.scroll_handle.viewport();
+        point(viewport.center().x, viewport.bottom() - px(20.))
+    });
+    cx.simulate_mouse_move(position, None, Modifiers::none());
     cx.executor().advance_clock(Duration::from_millis(200));
     cx.run_until_parked();
 
