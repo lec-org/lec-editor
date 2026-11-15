@@ -56,5 +56,11 @@
       "tarball": "https://github.com/vadimcn/codelldb/releases/download/v1.11.8/codelldb-darwin-arm64.vsix",
       "shasum": "a1065e34be3f72954b296657821a06c566a8747d4930c2d9ebb749146a756ed7"
     }
+  },
+  "console": {
+    "version": "1.25.260710002-preview",
+    "source": "https://github.com/microsoft/terminal/tree/v1.25.1912.0",
+    "tarball": "https://github.com/microsoft/terminal/releases/download/v1.25.1912.0/Microsoft.Windows.Console.ConPTY.1.25.260710002-preview.nupkg",
+    "shasum": "05fe9b571ea4fb198f5012405cb39a132cf23eee50feaa496524c149b2502692"
   }
 }

@@ -74,6 +74,8 @@ jobs:
           cache-on-failure: true
       - name: Check fork boundaries and translations
         run: python script/check-lec.py
+      - name: 准备 Windows 终端组件
+        run: python script/lec-toolchain.py install-console x86_64 "${{ runner.temp }}/line-console-check"
       - name: Validate installer syntax and identity
         shell: pwsh
         run: |

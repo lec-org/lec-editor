@@ -39,6 +39,27 @@ def download_archive(asset, cache):
     return archive
 
 
+def install_console(architecture, destination):
+    package = LOCK["console"]
+    native = {"x86_64": "x64", "aarch64": "arm64"}[architecture]
+    cache = ROOT / "target/lec-toolchain-cache" / f"conpty-{package['version']}"
+    cache.mkdir(parents=True, exist_ok=True)
+    archive = download_archive(package, cache)
+    files = {"conpty.dll": f"runtimes/win-{native}/native/conpty.dll"}
+    # x64 编辑器也能在 ARM64 Windows 上运行，控制台宿主须匹配系统架构。
+    for helper in (["x64", "arm64"] if native == "x64" else ["arm64"]):
+        files[f"{helper}/OpenConsole.exe"] = f"build/native/runtimes/{helper}/OpenConsole.exe"
+    with zipfile.ZipFile(archive) as bundle:
+        contents = {name: bundle.read(source) for name, source in files.items()}
+    destination = Path(destination).resolve()
+    for name, content in contents.items():
+        path = destination / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+    shutil.copy2(ROOT / "assets/CONPTY-LICENSE.txt", destination / "CONPTY-LICENSE.txt")
+    print(f"已准备 Windows 终端组件：{destination}", flush=True)
+
+
 def install(platform, destination, *, debugger=False):
     package = LOCK["debugger"] if debugger else LOCK
     asset = package["platforms"][platform]
@@ -163,6 +184,9 @@ if __name__ == "__main__":
     debugger_installer = commands.add_parser("install-debugger")
     debugger_installer.add_argument("platform", choices=LOCK["debugger"]["platforms"])
     debugger_installer.add_argument("destination", type=Path)
+    console_installer = commands.add_parser("install-console")
+    console_installer.add_argument("architecture", choices=["x86_64", "aarch64"])
+    console_installer.add_argument("destination", type=Path)
     checker = commands.add_parser("check")
     checker.add_argument("runner", type=Path)
     arguments = parser.parse_args()
@@ -170,5 +194,7 @@ if __name__ == "__main__":
         install(arguments.platform, arguments.destination)
     elif arguments.command == "install-debugger":
         install(arguments.platform, arguments.destination, debugger=True)
+    elif arguments.command == "install-console":
+        install_console(arguments.architecture, arguments.destination)
     else:
         check(arguments.runner)

@@ -26,3 +26,7 @@ Zig 主体使用 MIT 许可证；其中 LLVM、libc++、libc++abi、musl、MinGW
 基础调试使用 CodeLLDB 1.12.3 及其随附的 LLDB 22.1.8、CPython 3.12.7，安装在 `toolchains/codelldb`，保留原始发行包内容并补充 `assets/debugger-licenses` 中的许可证。固定版本、官方地址和 SHA256 记录在 `script/lec-toolchain.json`，安装结果记录于 `LEC-DEBUGGER.json`。
 
 macOS 新版官方包缺少 `debugserver`，因此从 CodeLLDB 1.11.8 官方包中补充这一辅助程序，保留其原有签名；不替换新版 LLDB。旧版 LLDB 20 在本机读取新系统的 Mach-O 符号时崩溃，不能整体回退。辅助程序采用 LLDB 20.1.4 对应的许可证，并单独锁定来源及摘要。打包后必须实际验证断点、变量、单步和退出，不能以 `--help` 成功代替调试验收。
+
+## Windows 终端组件
+
+Windows 发行包包含 Microsoft Windows Terminal v1.25.1912.0 发布的 ConPTY 1.25.260710002-preview，版本、官方下载地址与 SHA256 记录在 `script/lec-toolchain.json` 的 `console` 中。`conpty.dll` 放在主程序旁，`OpenConsole.exe` 按上游布局放在系统架构目录内；x64 安装包同时带有 x64、ARM64 宿主，以支持 ARM64 Windows 的 x64 仿真。组件采用 MIT 许可证，完整声明随包保存在 `CONPTY-LICENSE.txt`。

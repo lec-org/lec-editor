@@ -20,6 +20,35 @@ BUNDLE_SPEC.loader.exec_module(BUNDLE)
 
 
 class ToolchainTests(unittest.TestCase):
+    def test_windows_console_includes_native_hosts_and_rejects_a_changed_archive(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            cache = root / "target/lec-toolchain-cache/conpty-test"
+            cache.mkdir(parents=True)
+            license_path = root / "assets/CONPTY-LICENSE.txt"
+            license_path.parent.mkdir()
+            license_path.write_text("Microsoft MIT 许可")
+            archive = cache / "console.nupkg"
+            with zipfile.ZipFile(archive, "w") as bundle:
+                for native in ["x64", "arm64"]:
+                    bundle.writestr(f"runtimes/win-{native}/native/conpty.dll", f"DLL-{native}")
+                    bundle.writestr(f"build/native/runtimes/{native}/OpenConsole.exe", f"EXE-{native}")
+            lock = {"console": {"version": "test", "tarball": "https://example.com/console.nupkg",
+                                "shasum": hashlib.sha256(archive.read_bytes()).hexdigest()}}
+            with patch.object(TOOLCHAIN, "ROOT", root), patch.object(TOOLCHAIN, "LOCK", lock):
+                for architecture, native in [("x86_64", "x64"), ("aarch64", "arm64")]:
+                    destination = root / "安装 目录" / architecture
+                    TOOLCHAIN.install_console(architecture, destination)
+                    self.assertEqual((destination / "conpty.dll").read_text(), f"DLL-{native}")
+                    self.assertEqual((destination / "arm64/OpenConsole.exe").read_text(), "EXE-arm64")
+                    if architecture == "x86_64":
+                        self.assertEqual((destination / "x64/OpenConsole.exe").read_text(), "EXE-x64")
+                    self.assertTrue((destination / "CONPTY-LICENSE.txt").is_file())
+                archive.write_bytes(b"changed")
+                with self.assertRaisesRegex(ValueError, "SHA256"):
+                    TOOLCHAIN.install_console("x86_64", root / "invalid")
+                self.assertFalse((root / "invalid").exists())
+
     def test_unix_packages_keep_the_runner_and_toolchain_beside_the_editor(self):
         for system, target in [("Darwin", "aarch64-apple-darwin"),
                                ("Linux", "aarch64-unknown-linux-gnu")]:

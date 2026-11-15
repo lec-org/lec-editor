@@ -15,6 +15,9 @@ try {
     $stage = Join-Path $root "target/lec-windows-$Architecture"
     if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
     New-Item -ItemType Directory -Force $stage | Out-Null
+    # 构建脚本下载失败只会警告；发行包必须提前准备并校验终端组件。
+    python -X utf8 "$PSScriptRoot/lec-toolchain.py" install-console $Architecture $stage
+    if ($LASTEXITCODE -ne 0) { throw 'Windows 终端组件准备失败' }
     # Generate notices before compilation so the embedded license viewer is populated.
     & "$PSScriptRoot/generate-licenses.ps1"
     if (-not $SkipBuild) {
@@ -23,9 +26,8 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'line build failed' }
     }
 
-    # ConPTY is downloaded by crates/zed/build.rs. Fail packaging if it is missing.
     $output = Join-Path $root "target/$target/release"
-    foreach ($file in @('leceditor.exe', 'lec-run.exe', 'conpty.dll', 'OpenConsole.exe')) {
+    foreach ($file in @('leceditor.exe', 'lec-run.exe')) {
         Copy-Item (Join-Path $output $file) $stage -Force
     }
     New-Item -ItemType Directory -Force "$stage/bin" | Out-Null
