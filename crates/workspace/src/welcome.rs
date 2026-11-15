@@ -452,9 +452,9 @@ impl Render for WelcomePage {
         };
 
         let welcome_label = if self.fallback_to_recent_projects {
-            t!("Welcome back to line")
+            t!("Welcome back to Line")
         } else {
-            t!("Welcome to line")
+            t!("Welcome to Line")
         };
 
         h_flex()

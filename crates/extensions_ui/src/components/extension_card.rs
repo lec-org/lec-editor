@@ -370,7 +370,7 @@ impl ExtensionCard {
                             move |_, cx| {
                                 Tooltip::simple(
                                     t!(
-                                        "v{version} is not compatible with this version of line.",
+                                        "v{version} is not compatible with this version of Line.",
                                         version = version
                                     ),
                                     cx,

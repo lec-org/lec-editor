@@ -1,9 +1,9 @@
 > [!IMPORTANT]
 > Remove this line to confirm you've reviewed this PR before submitting.
 
-# line
+# Line
 
-line 是面向大一新生的极简中文 C/C++ 编辑器，基于 Zed，参考 Wu 的功能裁剪与中文化实现，围绕“打开文件、编写代码、运行程序”提供清晰的学习流程。
+Line 是面向大一新生的极简中文 C/C++ 编辑器，基于 Zed，参考 Wu 的功能裁剪与中文化实现，围绕“打开文件、编写代码、运行程序”提供清晰的学习流程。
 
 [产品官网](https://lec-org.github.io/lec-editor/) · [发行记录](https://github.com/lec-org/lec-editor/releases) · [Gitee 镜像](https://gitee.com/lec-org/lec-editor)
 
@@ -28,14 +28,16 @@ line 是面向大一新生的极简中文 C/C++ 编辑器，基于 Zed，参考 
 
 macOS、Windows、Linux 的 LEC 打包流程均附带固定版本的 C/C++ 工具链，安装后不需要额外下载编译器或配置系统 PATH。工具链使用 Zig 提供的 Clang、标准库和链接器，优先于系统编译器。
 
-目前尚未发布正式安装包。直接从源码执行 `cargo build` 不会自动下载工具链，可使用本机 Clang/GCC，或按下面的命令准备内置工具链。多源文件构建和第三方库管理仍待完善。
+正式安装包见[官网](https://lec-org.github.io/lec-editor/)。直接从源码执行 `cargo build` 不会自动下载工具链，可使用本机 Clang/GCC，或按下面的命令准备内置工具链。多源文件构建和第三方库管理仍待完善。
+
+在终端使用 `line .` 打开当前文件夹，或使用 `line main.c:10` 跳到指定行。macOS/Linux 可从应用菜单选择“安装 CLI”；Windows 安装器自动将命令目录加入用户 PATH，安装后重新打开终端。Linux 若尚未包含 `~/.local/bin`，需将其加入 PATH。支持的平台也可以使用 `Line` 调用。
 
 ## 本地构建
 
 需要 Rust `1.98.1`。macOS 还需要 Xcode Command Line Tools 和 CMake：
 
 ```sh
-cargo +1.98.1 build --locked -p zed --bin leceditor -p c_runner --bin lec-run --features gpui_platform/runtime_shaders
+cargo +1.98.1 build --locked -p zed --bin leceditor -p c_runner --bin lec-run -p cli --bin cli --features gpui_platform/runtime_shaders
 ./target/debug/leceditor
 ```
 
@@ -58,6 +60,6 @@ Windows 需要 Visual Studio C++ Build Tools、Windows SDK、Python 3.12 或更�
 
 ## 开源说明
 
-line 固定基于 Zed `v1.28.1`，保留上游版权声明与许可证。主体代码使用 GPL-3.0-or-later，部分组件使用 Apache-2.0；导入 Wu 的代码及来源记录见[第三方说明](docs/lec/THIRD_PARTY.md)。
+Line 固定基于 Zed `v1.28.1`，保留上游版权声明与许可证。主体代码使用 GPL-3.0-or-later，部分组件使用 Apache-2.0；导入 Wu 的代码及来源记录见[第三方说明](docs/lec/THIRD_PARTY.md)。
 
 更多开发约束见[上游基线记录](UPSTREAM.md)与[第一阶段说明](docs/lec/README.md)。

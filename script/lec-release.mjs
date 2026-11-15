@@ -90,7 +90,7 @@ async function publish(tag, directory) {
     return response.json();
   }
 
-  const notes = `# line ${tag.replace("lec-v", "")}\n\n面向 C/C++ 初学者的中文编辑器，固定基于 Zed v1.28.1，保留上游许可证。\n\n- 补齐文件右键菜单、最近项目、编辑工具栏及右侧大纲面板的中文文案。\n- 空文件夹提供上下排列的“创建 C 文件”和“创建 CPP 文件”按钮，中间用分割线和“或”分隔，悬停时整行高亮。\n- 创建文件时预填 main.c 或 main.cpp，可修改名称、确认或取消；修复文件树方向键经过操作区时的导航。\n- 三端继续内置 Zig C/C++ 工具链和 CodeLLDB 调试器，无需另装编译器或配置系统 PATH；支持 F5 编译运行和 F6 调试。\n\n提供 macOS Apple Silicon、Windows x86_64 和 Linux x86_64 制品。SHA256SUMS 用于核对完整性，downloads.json 记录源码提交、文件大小和摘要。\n\nmacOS 仅本地签名，未经 Apple 公证；Windows 未签名。Windows/Linux 图形界面及三端安装体验尚未完成实机验收。不连接上游自动更新，请从官网下载更新。\n${publishGitee ? "\nGitee 超过 100 MB 的安装包使用分卷，下载全部分卷后按 RESTORE.md 还原，并核对 SHA256SUMS。\n" : ""}\n对应源码：https://github.com/${repository}/tree/${commit}\n官网：https://lec-org.github.io/lec-editor/\n`;
+  const notes = `# Line ${tag.replace("lec-v", "")}\n\n面向 C/C++ 初学者的中文编辑器，固定基于 Zed v1.28.1，保留上游许可证。\n\n- 产品名称统一为 Line，终端命令为 \`line\`，支持的平台同时提供 \`Line\` 别名。\n- 补齐文件右键菜单、最近项目、编辑工具栏及右侧大纲面板的中文文案。\n- 空文件夹提供上下排列的“创建 C 文件”和“创建 CPP 文件”按钮，中间用分割线和“或”分隔，悬停时整行高亮。\n- 创建文件时预填 main.c 或 main.cpp，可修改名称、确认或取消；修复文件树方向键经过操作区时的导航。\n- 三端继续内置 Zig C/C++ 工具链和 CodeLLDB 调试器，无需另装编译器或配置系统 PATH；支持 F5 编译运行和 F6 调试。\n\n提供 macOS Apple Silicon、Windows x86_64 和 Linux x86_64 制品。SHA256SUMS 用于核对完整性，downloads.json 记录源码提交、文件大小和摘要。\n\nmacOS 仅本地签名，未经 Apple 公证；Windows 未签名。Windows/Linux 图形界面及三端安装体验尚未完成实机验收。不连接上游自动更新，请从官网下载更新。\n${publishGitee ? "\nGitee 超过 100 MB 的安装包使用分卷，下载全部分卷后按 RESTORE.md 还原，并核对 SHA256SUMS。\n" : ""}\n对应源码：https://github.com/${repository}/tree/${commit}\n官网：https://lec-org.github.io/lec-editor/\n`;
   // 先建立草稿，全部附件和清单就绪后才对外发布，避免官网出现半套安装包。
   const releases = JSON.parse(gh("release", "list", "--limit", "100", "--json", "tagName,isDraft"));
   const existing = releases.find((release) => release.tagName === tag);
@@ -108,7 +108,7 @@ async function publish(tag, directory) {
       "--target",
       commit,
       "--title",
-      `line ${tag}`,
+      `Line ${tag}`,
       "--draft",
       "--notes-file",
       notesPath,
@@ -121,7 +121,7 @@ async function publish(tag, directory) {
       (await gitee("/releases", {
         tag_name: tag,
         target_commitish: commit,
-        name: `line ${tag}`,
+        name: `Line ${tag}`,
         body: notes,
         prerelease: "true",
       }));

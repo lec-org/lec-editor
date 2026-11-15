@@ -106,7 +106,7 @@ fn run_current_file(
                 .context("cannot locate application directory")?
                 .join(format!("lec-run{}", std::env::consts::EXE_SUFFIX));
             if !runner.is_file() {
-                return Err(anyhow!(t!("The C/C++ runner is missing. Reinstall line.")));
+                return Err(anyhow!(t!("The C/C++ runner is missing. Reinstall Line.")));
             }
             let file = source.file_name().unwrap_or_default().to_string_lossy();
             let label = if debugging { t!("Debug {file}", file = file) } else { t!("Run {file}", file = file) };
@@ -144,7 +144,7 @@ fn run_current_file(
                     .join("toolchains/codelldb/adapter")
                     .join(format!("codelldb{}", std::env::consts::EXE_SUFFIX));
                 if !adapter.is_file() {
-                    return Err(anyhow!(t!("The C/C++ debugger is missing. Reinstall line.")));
+                    return Err(anyhow!(t!("The C/C++ debugger is missing. Reinstall Line.")));
                 }
                 let already_running = workspace.update(cx, |workspace, cx| {
                     workspace.project().read(cx).dap_store().read(cx).sessions()

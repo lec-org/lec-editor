@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""生成包含 C/C++ 工具链的 line macOS / Linux 安装包。"""
+"""生成包含 C/C++ 工具链和 CLI 的 Line macOS / Linux 安装包。"""
 
 import argparse
 import os
@@ -31,18 +31,23 @@ def bundle(skip_build):
         run("script/generate-licenses", env=environment)
         run("rustup", "target", "add", target)
         arguments = ["cargo", "--config", ".cargo/bundle-config.toml", "build", "--locked", "--release", "--target", target,
-                     "-p", "zed", "--bin", "leceditor", "-p", "c_runner", "--bin", "lec-run"]
+                     "-p", "zed", "--bin", "leceditor", "-p", "c_runner", "--bin", "lec-run",
+                     "-p", "cli", "--bin", "cli"]
         if system == "macos":
             arguments += ["--features", "gpui_platform/runtime_shaders"]
         run(*arguments, env=environment)
     output = ROOT / "target" / target / "release"
     with tempfile.TemporaryDirectory(prefix="lec-bundle-", dir=ROOT / "target") as temporary:
-        stage = Path(temporary) / ("line.app" if system == "macos" else "line")
+        stage = Path(temporary) / ("Line.app" if system == "macos" else "line")
         binaries = stage / ("Contents/MacOS" if system == "macos" else "bin")
         binaries.mkdir(parents=True)
-        for name in ["leceditor", "lec-run"]:
+        for name in ["leceditor", "lec-run", "cli"]:
             shutil.copy2(output / name, binaries / name)
             run("strip", "-S" if system == "macos" else "--strip-unneeded", str(binaries / name))
+        (binaries / "line").symlink_to("cli")
+        # 默认 macOS 文件系统不区分大小写，同一个入口已能接受两种拼写。
+        if not (binaries / "Line").exists():
+            (binaries / "Line").symlink_to("cli")
         if system == "linux":
             # 沿用上游发布包携带 libstdc++ 的方式，避免依赖构建机的新版本符号。
             dependencies = subprocess.check_output(["ldd", str(binaries / "leceditor")], text=True)
@@ -71,8 +76,8 @@ def bundle(skip_build):
             shutil.rmtree(iconset)
             with (stage / "Contents/Info.plist").open("wb") as stream:
                 plistlib.dump({
-                    "CFBundleExecutable": "leceditor", "CFBundleName": "line",
-                    "CFBundleDisplayName": "line", "CFBundleIdentifier": "org.lec.Editor",
+                    "CFBundleExecutable": "leceditor", "CFBundleName": "Line",
+                    "CFBundleDisplayName": "Line", "CFBundleIdentifier": "org.lec.Editor",
                     "CFBundlePackageType": "APPL", "CFBundleVersion": version,
                     "CFBundleShortVersionString": version, "CFBundleIconFile": "LECEditor.icns",
                     "LSMinimumSystemVersion": "12.0", "NSHighResolutionCapable": True,
@@ -83,7 +88,10 @@ def bundle(skip_build):
                 }, stream)
             # 只签自己的程序，避免重签第三方辅助程序或将 Python 源码误当作代码对象。
             run("codesign", "--force", "--sign", "-", str(binaries / "lec-run"))
+            run("codesign", "--force", "--sign", "-", str(binaries / "cli"))
             run("codesign", "--force", "--sign", "-", str(stage))
+        run(str(binaries / "line"), "--version", env=environment)
+        run(str(binaries / "line"), "--help", env=environment)
         run(sys.executable, "script/lec-toolchain.py", "check", str(binaries / "lec-run"))
         run(sys.executable, "script/check-lec-debugger.py", str(binaries / "lec-run"))
         if system == "macos":
@@ -92,7 +100,7 @@ def bundle(skip_build):
         dist.mkdir(exist_ok=True)
         if system == "macos":
             (Path(temporary) / "Applications").symlink_to("/Applications")
-            run("hdiutil", "create", "-volname", "line", "-srcfolder", temporary,
+            run("hdiutil", "create", "-volname", "Line", "-srcfolder", temporary,
                 "-ov", "-format", "ULMO", str(dist / f"line-macos-{architecture}.dmg"))
         else:
             with tarfile.open(dist / f"line-linux-{architecture}.tar.gz", "w:gz") as archive:

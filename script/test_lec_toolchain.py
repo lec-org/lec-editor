@@ -58,6 +58,7 @@ class ToolchainTests(unittest.TestCase):
                     "crates/zed/Cargo.toml": 'version = "1.28.1"',
                     f"target/{target}/release/leceditor": "editor",
                     f"target/{target}/release/lec-run": "runner",
+                    f"target/{target}/release/cli": "cli",
                     "LICENSE-GPL": "license", "docs/lec/THIRD_PARTY.md": "notices",
                     "assets/licenses.md": "licenses",
                     "crates/zed/resources/app-icon.png": "icon",
@@ -67,6 +68,7 @@ class ToolchainTests(unittest.TestCase):
                     path = root / name
                     path.parent.mkdir(parents=True, exist_ok=True)
                     path.write_text(contents, encoding="utf-8")
+                case_sensitive = not (root / "CRATES").exists()
                 checked = []
 
                 def packaging_command(*arguments, **options):
@@ -86,15 +88,17 @@ class ToolchainTests(unittest.TestCase):
                         self.assertEqual(runner.read_text(), "runner")
                         self.assertEqual((runner.parent / "leceditor").read_text(), "editor")
                         self.assertTrue((runner.parent / "toolchains/zig/zig").exists())
+                        self.assertEqual((runner.parent / "line").read_text(), "cli")
+                        self.assertEqual((runner.parent / "Line").read_text(), "cli")
                         checked.append(runner)
                     if arguments[0] == "hdiutil":
                         stage = Path(arguments[arguments.index("-srcfolder") + 1])
-                        app = stage / "line.app"
+                        app = stage / "Line.app"
                         with (app / "Contents/Info.plist").open("rb") as stream:
                             info = plistlib.load(stream)
                         self.assertEqual(info["CFBundleExecutable"], "leceditor")
                         self.assertEqual(info["CFBundleIdentifier"], "org.lec.Editor")
-                        self.assertEqual(info["CFBundleDisplayName"], "line")
+                        self.assertEqual(info["CFBundleDisplayName"], "Line")
                         self.assertTrue((app / "Contents/Resources/THIRD_PARTY.md").exists())
                         self.assertTrue((app / "Contents/MacOS/toolchains").is_symlink())
                         self.assertTrue((app / "Contents/Resources/toolchains/codelldb/adapter/codelldb").is_file())
@@ -108,8 +112,10 @@ class ToolchainTests(unittest.TestCase):
                 self.assertEqual(len(checked), 1)
                 if system == "Linux":
                     with tarfile.open(root / "dist/line-linux-aarch64.tar.gz") as archive:
-                        for name in ["bin/leceditor", "bin/lec-run", "bin/toolchains/zig/zig", "bin/toolchains/codelldb/adapter/codelldb", "THIRD_PARTY.md"]:
+                        for name in ["bin/leceditor", "bin/lec-run", "bin/cli", "bin/line", "bin/toolchains/zig/zig", "bin/toolchains/codelldb/adapter/codelldb", "THIRD_PARTY.md"]:
                             self.assertIn(f"line/{name}", archive.getnames())
+                        if case_sensitive:
+                            self.assertIn("line/bin/Line", archive.getnames())
 
     def test_install_preserves_runtime_and_licenses_for_zip_and_tar(self):
         for extension in ["zip", "tar.xz"]:

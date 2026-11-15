@@ -12,6 +12,7 @@ try {
     $target = "$Architecture-pc-windows-msvc"
     $env:ZED_RELEASE_CHANNEL = 'stable'
     $env:RELEASE_CHANNEL = 'stable'
+    $env:RELEASE_VERSION = (Select-String '^version = "([^"]+)"' crates/zed/Cargo.toml).Matches[0].Groups[1].Value
     $stage = Join-Path $root "target/lec-windows-$Architecture"
     if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
     New-Item -ItemType Directory -Force $stage | Out-Null
@@ -31,7 +32,11 @@ try {
         Copy-Item (Join-Path $output $file) $stage -Force
     }
     New-Item -ItemType Directory -Force "$stage/bin" | Out-Null
-    Copy-Item (Join-Path $output 'cli.exe') "$stage/bin/leceditor.exe" -Force
+    Copy-Item (Join-Path $output 'cli.exe') "$stage/bin/line.exe" -Force
+    & "$stage/bin/line.exe" --version
+    if ($LASTEXITCODE -ne 0) { throw 'Line CLI 版本检查失败' }
+    & "$stage/bin/line.exe" --help
+    if ($LASTEXITCODE -ne 0) { throw 'Line CLI 帮助检查失败' }
     Copy-Item LICENSE-GPL $stage -Force
     Copy-Item docs/lec/THIRD_PARTY.md $stage -Force
     Copy-Item assets/licenses.md $stage -Force

@@ -59,10 +59,10 @@ pub fn app_menus(cx: &mut App) -> Vec<Menu> {
 
     vec![
         Menu {
-            name: t!("line"),
+            name: t!("Line"),
             disabled: false,
             items: vec![
-                MenuItem::action(t!("About line"), zed_actions::About),
+                MenuItem::action(t!("About Line"), zed_actions::About),
                 MenuItem::action(t!("Check for Updates"), auto_update::Check),
                 MenuItem::separator(),
                 MenuItem::submenu(Menu::new(t!("Settings")).items([
@@ -103,13 +103,13 @@ pub fn app_menus(cx: &mut App) -> Vec<Menu> {
                 MenuItem::action(t!("Install CLI"), install_cli::InstallCliBinary),
                 MenuItem::separator(),
                 #[cfg(target_os = "macos")]
-                MenuItem::action(t!("Hide line"), super::Hide),
+                MenuItem::action(t!("Hide Line"), super::Hide),
                 #[cfg(target_os = "macos")]
                 MenuItem::action(t!("Hide Others"), super::HideOthers),
                 #[cfg(target_os = "macos")]
                 MenuItem::action(t!("Show All"), super::ShowAll),
                 MenuItem::separator(),
-                MenuItem::action(t!("Quit line"), Quit),
+                MenuItem::action(t!("Quit Line"), Quit),
             ],
         },
         Menu {
@@ -318,7 +318,7 @@ pub fn app_menus(cx: &mut App) -> Vec<Menu> {
             disabled: false,
             items: vec![
                 MenuItem::action(
-                    t!("line Repository"),
+                    t!("Line Repository"),
                     super::OpenBrowser {
                         url: "https://github.com/lec-org/lec-editor".into(),
                     },
