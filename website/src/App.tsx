@@ -1,5 +1,6 @@
 import { useEffect, useState, type ComponentProps } from "react";
-import { EditorDemo, DebugDemo } from "./components/EditorDemo";
+import { DebugDemo } from "./components/DebugDemo";
+import { LineWindowFrame } from "./components/LineWindow";
 import { BASE_PATH, files, hasGitee, platforms, release, size, version } from "./data/release";
 
 function Container({ className = "", ...props }: ComponentProps<"div">) {
@@ -108,7 +109,7 @@ export function App() {
                   <span className="platform-note">无需另装编译器</span>
                 </p>
               </div>
-              <EditorDemo />
+              <LineWindowFrame />
             </Container>
           </section>
         </div>
