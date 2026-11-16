@@ -12,4 +12,10 @@
 
 代码区使用本仓库已有的 Lilex 字体，原作者为 The Lilex Project Authors；字体保持原样，随附 SIL Open Font License 1.1，见 `public/fonts/Lilex-OFL.txt`。
 
+## Wu 流体背景
+
+`src/components/HeroBackground.tsx`、`FluidBackground.tsx` 与 `InkBackground.tsx` 移植自同一 Wu 提交 `2c22e1da77dbbe4b1eb668eb56a43d3de8e73aa3` 的 `website/src/components/`，沿用 GPL-3.0-or-later 许可证及 Wu 项目贡献者的来源声明。
+
+2026-11-16 接入 Line 首屏，保留 WebGL 流体着色器、蓝色墨迹、鼠标交互、触屏自动流动、闲置与离屏暂停及墨迹降级。改编补充了 GPU 对象释放、WebGL 上下文丢失时降级、动态效果偏好变化监听，以及缩放后重新初始化。
+
 编辑器基于 [Zed](https://github.com/zed-industries/zed)，应用版权与各组件许可证保持上游声明。本官网不表示获得 Zed Industries 官方认证。

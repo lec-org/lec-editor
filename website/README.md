@@ -29,6 +29,7 @@ bun run preview
 
 - `src/App.tsx`：页面内容、下载区和命令复制。
 - `src/components/LineWindow.tsx`：从 Wu 移植并改编的交互编辑器窗口，支持文件树、标签、搜索、大纲、断点及预设运行调试。数据与高亮在 `lineWindowData.ts`；下方独立调试卡片位于 `DebugDemo.tsx`。演示不会在浏览器内编译或保存代码。
+- `src/components/HeroBackground.tsx`：从 Wu 移植的首屏流体背景，桌面跟随鼠标、触屏自动流动，减少动态效果或 WebGL 不可用时降级。
 - `src/styles/global.css`：Tailwind 入口及页面视觉样式。
 - `src/data/release.ts`：下载清单校验与平台信息。
 - `build.ts`：打包前端资源并预渲染正文，输出到 `dist/`。正式托管无需 Bun 服务器。

@@ -23,6 +23,7 @@
   --muted: #a9acb7;
   --border: #ffffff16;
   --accent: #91acff;
+  --elevated: #f0eef4;
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-padding-top: 100px; }
@@ -60,9 +61,7 @@ pre { margin: 0; }
 .nav-source span { font-size: 12px; color: #9a9ca7; margin-left: 3px; }
 
 .hero-shell { margin: 5px; border-radius: 16px; position: relative; overflow: clip; isolation: isolate; background: linear-gradient(160deg, #08090c 20%, #10131b88 70%, transparent); }
-.hero-atmosphere { position: absolute; inset: 0 0 auto; height: 1060px; z-index: -1; overflow: hidden; pointer-events: none; mask-image: linear-gradient(#000 60%, transparent); background: radial-gradient(ellipse at 88% 35%, #293c633b, transparent 49%); }
-.light-ribbon { position: absolute; width: 720px; height: 920px; right: -125px; top: -390px; border: 1px solid #accaff25; border-radius: 50%; transform: rotate(-43deg); box-shadow: -40px 50px 80px -30px #4b71bc38, inset 26px -30px 60px -30px #b7c6ed25; background: linear-gradient(135deg, transparent 49%, #9ebce80b 70%, transparent); }
-.ribbon-two { width: 830px; height: 1150px; right: -310px; top: -430px; opacity: .5; transform: rotate(-43deg); }
+.hero-atmosphere { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; mask-image: linear-gradient(to bottom, #000 40%, transparent); background: linear-gradient(to bottom, #07080b, #12141a); }
 .hero { padding: 158px 0 0; }
 .hero-copy { position: relative; max-width: 920px; }
 .release-label { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #b6bdd0; margin-bottom: 26px; }
@@ -244,9 +243,6 @@ h3 { font-size: 21px; line-height: 1.5; font-weight: 500; letter-spacing: -.3px;
   .button svg { width: 16px; height: 16px; }
   .hero-platforms { font-size: 10px; gap: 8px; margin-top: 20px; }
   .hero-platforms .platform-note { padding-left: 10px; margin-left: 1px; }
-  .hero-atmosphere { height: 900px; }
-  .light-ribbon { right: -550px; opacity: .7; top: -400px; }
-  .ribbon-two { right: -650px; }
   .editor-stage { margin-top: 54px; }
   .editor-caption { padding-top: 13px; font-size: 9px; }
   .editor-caption > span:last-child { display: none; }

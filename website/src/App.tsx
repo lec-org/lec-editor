@@ -1,6 +1,7 @@
 import { useEffect, useState, type ComponentProps } from "react";
 import { DebugDemo } from "./components/DebugDemo";
 import { LineWindowFrame } from "./components/LineWindow";
+import { HeroBackground } from "./components/HeroBackground";
 import { BASE_PATH, files, hasGitee, platforms, release, size, version } from "./data/release";
 
 function Container({ className = "", ...props }: ComponentProps<"div">) {
@@ -72,8 +73,7 @@ export function App() {
       <main id="main">
         <div className="hero-shell">
           <div className="hero-atmosphere" aria-hidden="true">
-            <div className="light-ribbon"></div>
-            <div className="light-ribbon ribbon-two"></div>
+            <HeroBackground />
           </div>
           <section className="hero" aria-labelledby="hero-title">
             <Container>
