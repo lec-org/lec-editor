@@ -1,37 +1,44 @@
-# line 官网与发布
+# Line 官网
 
 官网：https://lec-org.github.io/lec-editor/
 
-采用 Astroship 的开源静态站点结构，来源及许可证见 [NOTICE.md](NOTICE.md)。GitHub Pages 托管同一官网，页面同时提供 GitHub 和 Gitee 下载入口。Gitee Pages 已下线，因此没有单独的 Gitee 站点。
+使用 `bun init --react=tailwind` 初始化的 React + TypeScript + Tailwind CSS 项目。Bun 负责依赖管理、开发服务、测试和静态构建，GitHub Pages 继续托管官网。
 
-## 本地预览
+## 本地开发
 
-需要 Node.js 22.12 或更新版本。
+使用 Bun 1.4.4 或更新版本；发布流水线固定为 1.4.4。
 
 ```sh
 cd website
-npm ci
-npm run dev
+bun install --frozen-lockfile
+bun dev
 ```
 
-`src/data/downloads.json` 在首次发布前为空，页面明确显示构建中。部署流程会从最近的正式 LEC GitHub Release 下载制品清单；浏览器不需要令牌，也不调用发布 API。
-
-## 发布安装包
-
-1. 在仓库 Actions Secret 中配置 `GITEE_TOKEN`，使用仅授权 `lec-org/lec-editor`、`projects` 权限的 Gitee 仓库级令牌。令牌过期后需要更新 Secret。
-2. 在 `main` 运行 **LEC 制品发布** 工作流，输入新标签，例如 `lec-v1.30.0`。三个平台必须全部构建成功后才会发布。关闭 `publish` 可只测试构建。
-3. 流水线复用上游原生打包脚本，构建 macOS ARM64 DMG、Windows x64 EXE 和 Linux x64 TAR.GZ。保留 `dev` 通道、Zed Dev 应用名和上游许可证，并通过上游提供的 `ZED_UPDATE_EXPLANATION` 禁用自动更新，避免混用上游安装包。
-4. GitHub Release 起初为草稿，Gitee 制品和清单全部上传成功后才公开。官网流水线随后自动更新下载入口。构建成功而上传失败时，可单独运行 **LEC 制品上传**，填写原构建运行 ID 与相同标签，复用已有安装包。发布脚本会核对制品来源和源码提交，禁止覆盖已经正式发布的版本。官网也可单独重新部署。
-
-`script/lec-release.mjs` 为安装包生成 SHA-256，并把相同内容上传到两个源。Gitee 普通仓库单附件限制 100 MB，因此超过 95 MB 的文件会按字节分卷；页面提供全部分卷链接和 Windows / macOS / Linux 还原命令。还原后必须核对原始安装包 SHA-256。Gitee 的单仓库总附件配额为 1 GB，历史版本附件需要按实际容量人工管理，脚本不会自动删除旧版本。
-
-首批安装包没有 Apple 公证或 Windows 代码签名证书，不应当作官方 Zed 安装包分发。CI 构建成功也不等于已在各平台完成安装、启动与业务验收。
-
-## 检查
+默认地址是 `http://127.0.0.1:4321/lec-editor/`，可通过 `PORT` 调整端口。
 
 ```sh
-node --test script/lec-release.test.mjs
-npm --prefix website run build
+bun run check
+bun test
+bun run build
+bun run preview
 ```
 
-根目录 README 的人工审阅标记来自仓库 AGENTS.md，需由维护者审阅后手动移除。
+`preview` 提供 `dist/` 中的正式静态产物，适合检查预渲染和 React 接管交互后的行为。修改源码后需要重新构建，才能在产物预览中看到更新。
+
+## 页面与构建
+
+- `src/App.tsx`：页面内容、下载区和命令复制。
+- `src/components/EditorDemo.tsx`：C/C++ 示例、运行过程与单步调试的交互演示。演示使用预设数据，不会在浏览器内编译代码。
+- `src/styles/global.css`：Tailwind 入口及页面视觉样式。
+- `src/data/release.ts`：下载清单校验与平台信息。
+- `build.ts`：打包前端资源并预渲染正文，输出到 `dist/`。正式托管无需 Bun 服务器。
+
+部署前缀固定为 `/lec-editor/`，由 `src/data/release.ts` 的 `BASE_PATH` 统一用于资源与服务路径。正式 HTML 使用 React 预渲染，浏览器通过 hydration 接管交互。
+
+## 下载与发布
+
+`src/data/downloads.json` 在仓库中保留空清单。`.github/workflows/lec-pages.yml` 在部署时读取最近正式 GitHub Release 的 `downloads.json`，经过地址、摘要与文件大小校验后生成三端下载入口。浏览器无需令牌，也不会调用发布 API。
+
+推送 `main` 的官网改动会自动部署。安装包发布成功后也会触发官网更新。官网按清单显示 GitHub 下载；只有清单包含 Gitee 附件时才显示对应入口。Gitee 工作暂缓，当前继续使用 GitHub Pages 托管。
+
+编辑器安装包仍由独立的制品工作流构建，官网框架迁移不改变编辑器的 Rust/GPUI 实现。版权来源见 [NOTICE.md](NOTICE.md)。

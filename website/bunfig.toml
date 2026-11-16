@@ -1,0 +1,7 @@
+[install]
+registry = "https://registry.npmjs.org"
+# Tailwind 插件声明的 Bun peer 已由本机与 CI 的固定运行时提供。
+peer = false
+
+[serve.static]
+plugins = ["bun-plugin-tailwind"]
