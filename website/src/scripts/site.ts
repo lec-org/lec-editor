@@ -96,16 +96,3 @@ document.querySelector<HTMLButtonElement>('#copy-cli')?.addEventListener('click'
     if (status) status.textContent = '无法访问剪贴板，请手动选中并复制命令。';
   }
 });
-
-const editor = document.querySelector<HTMLElement>('[data-tilt]');
-if (editor && window.matchMedia('(hover: hover) and (pointer: fine)').matches && !reducedMotion.matches) {
-  editor.addEventListener('pointermove', (event) => {
-    const bounds = editor.getBoundingClientRect();
-    editor.style.setProperty('--tilt-x', `${((event.clientY - bounds.top) / bounds.height - 0.5) * -1.6}deg`);
-    editor.style.setProperty('--tilt-y', `${((event.clientX - bounds.left) / bounds.width - 0.5) * 1.6}deg`);
-  });
-  editor.addEventListener('pointerleave', () => {
-    editor.style.setProperty('--tilt-x', '0deg');
-    editor.style.setProperty('--tilt-y', '0deg');
-  });
-}

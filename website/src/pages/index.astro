@@ -21,7 +21,7 @@ for (const file of files) {
     if (parsed.protocol !== 'https:' || parsed.hostname !== host || parsed.username || parsed.password || parsed.search) throw new Error('制品下载地址校验失败');
   }
 }
-const size = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+const size = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} MiB`;
 const version = release.tag?.replace('lec-v', '');
 const code = [
   '<span class="syntax-purple">#include</span> <span class="syntax-green">&lt;stdio.h&gt;</span>',
@@ -34,73 +34,68 @@ const code = [
 const debugCode = ['int main(void) {', '    int value = 1;', '    value += 2;', '    printf("%d\\n", value);', '    return 0;', '}'];
 ---
 
-<Layout title="Line — 写下第一行，看见它运行">
+<Layout title="Line — 为 C/C++ 初学者而来的轻量编辑器">
   <header class="site-header">
     <Container class="nav">
-      <a class="brand" href="#" aria-label="Line 首页"><img src={`${import.meta.env.BASE_URL}/line.png`} width="38" height="38" alt="" /><span>Line<span class="brand-period">.</span></span></a>
-      <nav aria-label="主导航"><a href="#experience">编辑体验</a><a href="#debugging">轻松调试</a><a href="https://github.com/lec-org/lec-editor" class="source-link">开源代码 <span aria-hidden="true">↗</span></a></nav>
-      <a class="nav-download" href="#downloads">下载 Line <span aria-hidden="true">↓</span></a>
+      <a class="brand glass" href="#" aria-label="Line 首页"><img src={`${import.meta.env.BASE_URL}/line.png`} width="32" height="32" alt=""/><span>Line</span></a>
+      <nav class="glass" aria-label="主导航"><a href="#experience">编辑体验</a><a href="#debugging" class="nav-detail">调试</a><a href="https://github.com/lec-org/lec-editor" class="nav-source">GitHub <span aria-hidden="true">↗</span></a><a class="nav-download" href="#downloads"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg>下载</a></nav>
     </Container>
   </header>
-
   <main id="main">
-    <section class="hero" aria-labelledby="hero-title">
-      <div class="hero-light" aria-hidden="true"></div>
-      <div class="hero-grid" aria-hidden="true"></div>
-      <svg class="signal-paths" viewBox="0 0 1440 1100" fill="none" aria-hidden="true">
-        <defs><linearGradient id="signal" x1="0" y1="1100" x2="1200" y2="200" gradientUnits="userSpaceOnUse"><stop stop-color="#3467ff" stop-opacity="0"/><stop offset=".45" stop-color="#557eff" stop-opacity=".6"/><stop offset="1" stop-color="#8fbcff" stop-opacity="0"/></linearGradient></defs>
-        {Array.from({length: 20}, (_, index) => <path d={`M ${-320 + index * 38} 1100 L ${290 + index * 15} ${590 + index * 12} Q ${410 + index * 15} ${460 + index * 12} ${620 + index * 24} ${460 + index * 12} L 1700 ${460 + index * 12}`} stroke="url(#signal)" stroke-width="1" class:list={['signal-line', index % 5 === 0 && 'signal-line-bright']} style={`--delay:${index * -1.4}s`} />)}
-      </svg>
-      <Container>
-        <div class="hero-copy">
-          <a class="release-label" href="#downloads"><span class="status-dot"></span>{version ? `Line ${version} 现已可用` : '为 C / C++ 初学者而来'}<span aria-hidden="true">↗</span></a>
-          <h1 id="hero-title">写下第一行。<br/><span>看见它运行。</span></h1>
-          <p class="hero-description">为 C / C++ 初学者打造的轻量编辑器。<br/>中文界面，内置工具链。打开，就开始。</p>
-          <div class="hero-actions"><Link href="#downloads" class="primary-download">免费下载 Line <span aria-hidden="true">↓</span></Link><a class="text-link" href="#experience">看看它如何工作 <span aria-hidden="true">↘</span></a></div>
-          <div class="hero-platforms"><span>⌘ macOS</span><span>⊞ Windows</span><span class="linux-label">&gt;_ Linux</span><span class="platform-divider"></span><span>无需另装编译器</span></div>
-        </div>
-
+    <div class="hero-shell">
+      <div class="hero-atmosphere" aria-hidden="true"><div class="light-ribbon"></div><div class="light-ribbon ribbon-two"></div></div>
+      <section class="hero" aria-labelledby="hero-title">
+        <Container>
+          <div class="hero-copy">
+            <a class="release-label" href="https://github.com/lec-org/lec-editor/releases"><span class="status-dot"></span>{version ? `Line ${version} 现已发布` : '为 C / C++ 初学者而来'}<span aria-hidden="true">↗</span></a>
+            <h1 id="hero-title">从第一行代码，<br/>到第一个<span class="hero-result">「我会了」。</span></h1>
+            <p class="hero-description">为 C / C++ 初学者而来的轻量编辑器。<br/>中文界面，内置编译与调试工具。打开，就能开始。</p>
+            <div class="hero-actions"><Link href="#downloads"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg>免费下载 Line</Link><a class="button secondary" href="#experience">看看编辑器 <span aria-hidden="true">↘</span></a></div>
+            <p class="hero-platforms">macOS <span>·</span> Windows <span>·</span> Linux <span class="platform-note">无需另装编译器</span></p>
+          </div>
         <div class="editor-stage" id="experience">
           <div class="editor-halo" aria-hidden="true"></div>
-          <div class="editor-window" data-tilt>
-            <div class="editor-titlebar"><div class="traffic" aria-hidden="true"><i></i><i></i><i></i></div><div class="window-name"><img src={`${import.meta.env.BASE_URL}/line.png`} width="17" height="17" alt=""/>Line <span>/</span> 我的第一份程序</div><span class="window-badge">C / C++</span></div>
+          <div class="editor-window">
+            <div class="editor-titlebar"><div class="traffic" aria-hidden="true"><i></i><i></i><i></i></div><div class="window-name"><img src={`${import.meta.env.BASE_URL}/line.png`} width="17" height="17" alt=""/>Line <span>/</span> C语言练习</div><span class="window-badge">C / C++</span></div>
             <div class="editor-main">
+              <div class="activity-bar" aria-hidden="true"><span class="activity-active"><svg viewBox="0 0 24 24"><path d="M8 3h7l5 5v12H8zM4 7v14h12M15 3v6h5"/></svg></span><span><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></svg></span><span><svg viewBox="0 0 24 24"><path d="M5 5h14M5 10h14M5 15h14M5 20h14"/></svg></span><span><svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="13" rx="5"/><path d="M9 7V4h6v3M3 10h4m10 0h4M3 16h4m10 0h4M12 8v12"/></svg></span><span class="activity-bottom"><svg viewBox="0 0 24 24"><path d="M3 3h7v7H3zm11 0h7v7h-7zM3 14h7v7H3zm11 0h7v7h-7z"/></svg></span></div>
               <aside class="editor-sidebar" aria-label="示意文件列表"><div class="sidebar-heading">文件 <span>＋</span></div><div class="project-folder">⌄ <span class="folder-icon">▰</span> C语言练习</div><div class="source-file active"><span class="c-file-icon">C</span><span data-filename>main.c</span></div><div class="source-file muted"><span class="file-outline">◇</span> 学习笔记.txt</div><div class="sidebar-tip"><span class="status-dot"></span>工具链已就绪</div></aside>
               <div class="editor-workspace">
-                <div class="editor-toolbar"><div role="tablist" aria-label="选择代码示例"><button type="button" role="tab" id="example-c" aria-controls="code-example" aria-selected="true" tabindex="0" data-language="c">C 入门<span class="tab-dot"></span></button><button type="button" role="tab" id="example-cpp" aria-controls="code-example" aria-selected="false" tabindex="-1" data-language="cpp">C++ 起步</button></div><button type="button" class="run-button" id="run-demo"><span aria-hidden="true">▶</span><span data-run-label>运行演示</span><kbd>F5</kbd></button></div>
-                <div class="code-area" id="code-example" role="tabpanel" aria-labelledby="example-c"><div class="code-breadcrumb"><span data-filename>main.c</span><span>›</span>main()</div><pre id="source-code">{code.map((line, index) => <span class="code-line"><span class="line-number" aria-hidden="true">{index + 1}</span><code set:html={line || ' '} /></span>)}</pre><div class="code-ghost" aria-hidden="true">每一个程序，都从这里开始。</div></div>
+                <div class="editor-toolbar"><div role="tablist" aria-label="选择代码示例"><button type="button" role="tab" id="example-c" aria-controls="code-example" aria-selected="true" tabindex="0" data-language="c">main.c<span class="tab-dot"></span></button><button type="button" role="tab" id="example-cpp" aria-controls="code-example" aria-selected="false" tabindex="-1" data-language="cpp">main.cpp</button></div><button type="button" class="run-button" id="run-demo"><span aria-hidden="true">▶</span><span data-run-label>运行演示</span><kbd>F5</kbd></button></div>
+                <div class="code-area" id="code-example" role="tabpanel" aria-labelledby="example-c"><div class="code-breadcrumb"><span data-filename>main.c</span><span>›</span>main()</div><pre id="source-code">{code.map((line, index) => <span class="code-line"><span class="line-number" aria-hidden="true">{index + 1}</span><code set:html={line || ' '} /></span>)}</pre></div>
                 <div class="terminal"><div class="terminal-tabs"><span class="terminal-active">运行结果</span><span>终端</span><span class="terminal-right">内置 Zig · C17 / C++17</span></div><div class="terminal-output" aria-live="polite" aria-atomic="true"><p class="terminal-command"><span>❯</span> <span id="terminal-command">编译运行 main.c</span></p><p class="terminal-result" id="terminal-result">Hello, Line!</p><p class="terminal-status" id="terminal-status"><span>✓</span> 程序已结束，退出代码 0</p></div></div>
               </div>
             </div>
             <div class="editor-status"><span><span class="status-dot"></span>就绪 <span class="status-separator">│</span> 0 个错误　0 个警告</span><span>UTF-8 <span class="status-separator">│</span> <span id="status-language">C</span> <span class="status-separator">│</span> 4 空格</span></div>
           </div>
-          <div class="editor-caption"><span>交互界面示意 · 可点击「运行演示」</span><span>从编写，到运行，一处完成 <span aria-hidden="true">↗</span></span></div>
+          <div class="editor-caption"><span>交互界面示意 · 可点击「运行演示」</span><span>点击文件标签，切换 C / C++ <span aria-hidden="true">↗</span></span></div>
         </div>
-      </Container>
-    </section>
+        </Container>
+      </section>
+    </div>
 
     <Container>
-      <div class="foundation reveal" aria-label="技术基础"><span class="foundation-intro">轻量的外表，扎实的内核。</span><a href="https://github.com/zed-industries/zed">Fork 自 <strong>Zed</strong></a><span><strong>Rust</strong> 构建</span><span><strong>GPUI</strong> 原生界面</span><span class="foundation-open">开源，自由探索 <span aria-hidden="true">↗</span></span></div>
-
-      <section class="start-section section-space" aria-labelledby="start-title">
-        <div class="section-heading reveal"><span class="section-label"><span>01</span> 少一点准备，多一点开始</span><h2 id="start-title">把时间留给代码。<br/><span class="text-muted">环境配置，交给 Line。</span></h2><p>第一次学 C 语言，不必从寻找编译器、配置路径开始。<br class="desktop-break"/>你需要的基础工具，已经在里面。</p></div>
-        <div class="start-grid">
-          <article class="toolchain-card feature-surface reveal"><div class="card-topline"><span class="mono-label">READY TO CODE</span><span class="tiny-status"><i></i> 内置，就绪</span></div><div class="pipeline" aria-hidden="true"><div class="pipeline-source">C<span>源文件</span></div><div class="pipeline-line"><i></i></div><div class="pipeline-core"><img src={`${import.meta.env.BASE_URL}/line.png`} width="70" height="70" alt=""/></div><div class="pipeline-line"><i></i></div><div class="pipeline-play">▶<span>运行结果</span></div></div><h3>工具链已备好，<br/>第一行不必等待。</h3><p>三端内置 Zig C/C++ 工具链。打开文件，写下代码，按 F5 编译运行。无需额外下载编译器或配置系统 PATH。</p><div class="card-footer"><span>C17</span><span>C++17</span><span>macOS / Windows / Linux</span></div></article>
-          <div class="small-feature-stack">
-            <article class="feature-surface language-card reveal"><div class="mini-menu" aria-hidden="true"><div>创建 C 文件 <span>＋</span></div><div>创建 CPP 文件 <span>＋</span></div><div class="mini-menu-active">运行 <span>F5</span></div></div><div><span class="mono-label">少一点陌生</span><h3>看得懂，才好上手。</h3><p>从文件操作到运行结果，常用界面使用中文。空文件夹里，就能找到创建 C / C++ 文件的按钮。</p></div></article>
-            <article class="feature-surface focus-card reveal"><div class="focus-symbol" aria-hidden="true"><span>{'{'}</span><i></i><span>{'}'}</span></div><div><span class="mono-label">少一点打扰</span><h3>打开编辑器，专注写代码。</h3><p>无需登录。保留编辑、搜索、终端和基础调试，也能下载主题与图标，找到自己喜欢的样子。</p></div></article>
-          </div>
+      <section class="media-section toolchain-section" aria-labelledby="toolchain-title">
+        <div class="setup-window feature-surface reveal">
+          <div class="mini-title"><img src={`${import.meta.env.BASE_URL}/line.png`} width="24" height="24" alt=""/>开始你的第一次练习<span class="ready-badge"><span class="status-dot"></span>准备就绪</span></div>
+          <div class="setup-folder"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h7l2 3h9v11H3z"/></svg><span>C语言练习</span><span class="folder-empty">空文件夹</span></div>
+          <div class="creation-actions"><span>从一份源文件开始</span><a href="#experience"><span class="file-token">C</span>创建 C 文件 <span aria-hidden="true">＋</span></a><div class="creation-divider"><span>或</span></div><a href="#experience"><span class="file-token cpp-token">C++</span>创建 CPP 文件 <span aria-hidden="true">＋</span></a></div>
+          <div class="setup-checks"><span><i>✓</i>C / C++ 编译工具</span><span><i>✓</i>调试器</span><span><i>✓</i>中文界面</span></div>
+          <p class="visual-note">界面示意 · 下载后即可在编辑器中创建</p>
         </div>
+        <div class="media-copy reveal"><span class="eyebrow">开始，简单一点</span><h2 id="toolchain-title">第一课是写代码，<br/>环境已经准备好了。</h2><p>不必先找编译器、配路径。Line 在三个系统上都内置 Zig C/C++ 工具链，从空文件夹创建一份 C 或 C++ 文件，就能开始练习。</p><a class="button secondary" href="#downloads">选择你的系统 <span aria-hidden="true">↗</span></a><div class="feature-tags"><span>C17</span><span>C++17</span><span>无需配置 PATH</span></div></div>
       </section>
 
-      <section id="debugging" class="debug-section section-space" aria-labelledby="debug-title">
-        <div class="debug-intro reveal"><span class="section-label"><span>02</span> 让每一步，都看得见</span><h2 id="debug-title">不只运行。<br/><span class="text-muted">还可以，一步步看懂。</span></h2><p>结果和想的不一样？设一个断点，停下来看看变量。<br/>继续、单步、停止，都在手边。</p><div class="debug-shortcuts"><span><kbd>F6</kbd> 开始调试</span><span><kbd>F9</kbd> 切换断点</span></div><button type="button" class="button secondary" id="debug-next">下一步演示 <span aria-hidden="true">→</span></button><p class="demo-note">交互示意：观察 value 从 1 变为 3</p></div>
+      <section id="debugging" class="media-section debug-section" aria-labelledby="debug-title">
+        <div class="media-copy reveal"><span class="eyebrow">看懂每一步</span><h2 id="debug-title">程序怎么运行，<br/>停下来就看明白了。</h2><p>结果和想的不一样？设一个断点，单步执行，观察变量。运行和基础调试都在手边，不必先写配置文件。</p><div class="debug-shortcuts"><span><kbd>F6</kbd> 开始调试</span><span><kbd>F9</kbd> 切换断点</span></div><button type="button" class="button secondary" id="debug-next">下一步演示 <span aria-hidden="true">→</span></button><p class="demo-note">交互示意：点击按钮，观察 value 从 1 变为 3。</p></div>
         <div class="debug-window feature-surface reveal"><div class="debug-window-top"><span class="status-dot"></span><span id="debug-state">已在断点暂停</span><span class="debug-file">main.c</span></div><div class="debug-content"><div class="debug-code">{debugCode.map((line, index) => <div class:list={['debug-code-line', index === 2 && 'current-line']} data-debug-line={index}><span class="debug-gutter">{index === 2 ? '●' : ''}</span><span class="line-number">{index + 1}</span><code>{line}</code><span class="execution-arrow" aria-hidden="true">←</span></div>)}</div><div class="debug-variables"><span class="variable-heading">局部变量 <span>⌄</span></span><div class="variable-row"><span class="variable-type">int</span><span>value</span><strong id="debug-value" aria-live="polite">1</strong></div><div class="variable-hint"><span class="status-dot"></span><span id="debug-hint">执行下一行，看看值的变化。</span></div></div></div><div class="debug-window-footer"><span>内置 CodeLLDB</span><span>不必先编写调试配置</span></div></div>
       </section>
 
-      <section class="workflow-section section-space" aria-labelledby="workflow-title"><div class="section-heading reveal"><span class="section-label"><span>03</span> 简单三步，开始你的练习</span><h2 id="workflow-title">从「我想试试」，<br/><span class="text-muted">到「我做到了」。</span></h2></div><div class="workflow-steps"><article class="reveal"><span class="step-index">01<span aria-hidden="true">↗</span></span><h3>打开一个文件夹</h3><p>给这次练习一个自己的位置。<br/>从「创建 C 文件」开始。</p></article><article class="reveal"><span class="step-index">02<span aria-hidden="true">↗</span></span><h3>写下你的代码</h3><p>语法高亮、代码补全与问题提示，<br/>陪你把想法写清楚。</p></article><article class="reveal"><span class="step-index">03<span aria-hidden="true">↵</span></span><h3>按 F5，看见结果</h3><p>在底部终端查看输出、输入数据。<br/>编译失败时，不会运行旧产物。</p></article></div><div class="cli-strip reveal"><span>习惯终端？一行命令，打开项目。</span><button type="button" id="copy-cli" aria-label="复制 line 点命令"><code><span>❯</span> line .</code><span class="copy-label">复制命令 <span aria-hidden="true">⧉</span></span></button><a href="https://github.com/lec-org/lec-editor#使用说明">CLI 使用说明 <span aria-hidden="true">↗</span></a><span id="copy-status" class="sr-only" aria-live="polite"></span></div></section>
+      <section class="workflow-section" aria-labelledby="workflow-title"><div class="workflow-heading reveal"><span class="eyebrow">学编程，少一点阻碍</span><h2 id="workflow-title">写代码需要的，<br/>就在你熟悉的位置。</h2></div><div class="workflow-steps"><article class="reveal"><span class="step-index">01 / 编写</span><h3>用中文，找到下一步</h3><p>文件操作、常用菜单与运行入口使用中文。保留语法高亮、代码补全与问题提示，让注意力回到代码。</p></article><article class="reveal"><span class="step-index">02 / 运行</span><h3>按 F5，看见结果</h3><p>在底部终端查看输出、输入数据。编译失败时不会运行旧产物，当前源文件和运行结果对应得上。</p></article><article class="reveal"><span class="step-index">03 / 专注</span><h3>工具，恰好够用</h3><p>无需登录，打开即可使用。编辑、搜索、终端和基础调试，加上主题与图标扩展，按自己的节奏学习。</p></article></div></section>
 
-      <section id="downloads" class="downloads section-space" aria-labelledby="download-title"><div class="download-glow" aria-hidden="true"></div><div class="download-heading reveal"><img class="download-icon" src={`${import.meta.env.BASE_URL}/line.png`} width="80" height="80" alt="" loading="lazy"/><span class="section-label">YOUR NEXT LINE</span><h2 id="download-title">下一行，从这里开始。</h2><p>选择你的系统，下载 Line。<br/>带上好奇心，剩下的写着看。</p><span class="version-label"><span class="status-dot"></span>{version ? `v${version} · 开源发布` : '安装包正在构建'}</span></div>
+      <section class="open-source reveal" aria-labelledby="open-title"><div class="source-symbol" aria-hidden="true">{ '</>' }</div><h2 id="open-title">原生的底子，开源的自由。</h2><p>Line fork 自 Zed，用 Rust 与 GPUI 构建。<br/>保留扎实的编辑器核心，为 C / C++ 入门精简体验。<br/>每一处改动，都可以在源码里看到。</p><div class="center-actions"><a class="button" href="https://github.com/lec-org/lec-editor">查看源代码 <span aria-hidden="true">↗</span></a><a class="button secondary" href="https://github.com/lec-org/lec-editor#使用说明">阅读使用说明 <span aria-hidden="true">↗</span></a></div><div class="cli-strip"><span>习惯终端？用命令打开项目。</span><button type="button" id="copy-cli" aria-label="复制 line 点命令"><code><span>❯</span> line .</code><span class="copy-label">复制 ⧉</span></button><span id="copy-status" class="sr-only" aria-live="polite"></span></div></section>
+
+      <section id="downloads" class="downloads" aria-labelledby="download-title"><div class="download-heading reveal"><img class="download-icon" src={`${import.meta.env.BASE_URL}/line.png`} width="88" height="88" alt="" loading="lazy"/><h2 id="download-title">写下你的第一行。</h2><p>选好系统，下载 Line。<br/>编译器和调试器，一起准备好了。</p><span class="version-label">{version ? `v${version} · 免费开源` : '安装包正在构建'}</span></div>
         <div class="platform-grid">{platforms.map(platform => {
           const file = files.find(file => file.name === platform.file);
           return <article class="platform feature-surface reveal" data-platform={platform.key}><div class="platform-icon" aria-hidden="true">{platform.icon}</div><h3>{platform.name}</h3><p>{platform.arch}</p>{file ? <><Link href={file.github} data-download={platform.key}>下载 {platform.extension}<span aria-hidden="true">↓</span></Link><span class="file-size">{size(file.size)} <span>· 内置 C/C++ 工具链</span></span>{file.gitee.parts.length > 0 && <details class="gitee-download"><summary>从 Gitee 下载</summary><div class="gitee-parts">{file.gitee.parts.map((part, index) => <a href={part.url}>{file.gitee.parts.length > 1 ? `下载分卷 ${index + 1} / ${file.gitee.parts.length}` : '下载安装包'} <span>↓</span></a>)}{file.gitee.command && <><p>下载全部分卷后，在下载目录执行：</p><pre>{file.gitee.command}</pre></>}</div></details>}<details class="checksum"><summary>SHA-256 校验值</summary><code>{file.sha256}</code></details></> : <div class="awaiting"><span>安装包构建中</span><a href="https://github.com/lec-org/lec-editor/releases">查看发行记录 ↗</a></div>}</article>;
@@ -108,13 +103,11 @@ const debugCode = ['int main(void) {', '    int value = 1;', '    value += 2;', 
         <p class="download-notice">macOS 安装包未经 Apple 公证，Windows 安装包尚未签名。更新请回到本页下载。</p><div class="release-links"><a href="https://github.com/lec-org/lec-editor/releases">查看发行记录 <span aria-hidden="true">↗</span></a>{hasGitee && <a href="https://gitee.com/lec-org/lec-editor/releases">Gitee 发行记录 ↗</a>}{release.commit && <a href={`https://github.com/lec-org/lec-editor/tree/${release.commit}`}>本版本源码 <span aria-hidden="true">↗</span></a>}</div>
       </section>
 
-      <section class="faq-section reveal" aria-labelledby="faq-title"><div><span class="section-label">先解答几个小问题</span><h2 id="faq-title">开始之前。</h2></div><div class="faq-list"><details><summary>还需要自己安装编译器吗？<span aria-hidden="true">＋</span></summary><p>正式安装包已经附带 Zig C/C++ 工具链和 CodeLLDB 调试器，无需额外安装编译器或手动配置系统 PATH。从源码构建则需要按仓库说明准备工具。</p></details><details><summary>C 和 C++ 都可以写吗？<span aria-hidden="true">＋</span></summary><p>可以。保存为 .c 时使用 C17，保存为 .cpp、.cc、.cxx 时使用 C++17。当前快捷运行入口编译单个源文件，适合入门阶段的独立练习。</p></details><details><summary>Line 和 Zed 是什么关系？<span aria-hidden="true">＋</span></summary><p>Line fork 自 Zed，当前固定基于 Zed v1.28.1，沿用 Rust 与 GPUI 的原生编辑基础，再为 C/C++ 初学者精简功能、补充中文界面与编译运行体验。Line 保留上游版权声明和开源许可证。</p></details><details><summary>在 Mac 上按 F5 没有反应？<span aria-hidden="true">＋</span></summary><p>部分 Mac 键盘需要按 Fn + F5，也可以直接点击编辑器右上角的「运行」按钮。调试对应 F6，断点对应 F9。</p></details></div></section>
+      <section class="faq-section reveal" aria-labelledby="faq-title"><h2 id="faq-title">你可能还想知道。</h2><div class="faq-list"><details><summary>还需要自己安装编译器吗？<span aria-hidden="true">＋</span></summary><p>正式安装包已经附带 Zig C/C++ 工具链和 CodeLLDB 调试器，无需额外安装编译器或手动配置系统 PATH。从源码构建则需要按仓库说明准备工具。</p></details><details><summary>C 和 C++ 都可以写吗？<span aria-hidden="true">＋</span></summary><p>可以。保存为 .c 时使用 C17，保存为 .cpp、.cc、.cxx 时使用 C++17。当前快捷运行入口编译单个源文件，适合入门阶段的独立练习。</p></details><details><summary>Line 和 Zed 是什么关系？<span aria-hidden="true">＋</span></summary><p>Line fork 自 Zed，当前固定基于 Zed v1.28.1，沿用 Rust 与 GPUI 的原生编辑基础，再为 C/C++ 初学者精简功能、补充中文界面与编译运行体验。Line 保留上游版权声明和开源许可证。</p></details><details><summary>在 Mac 上按 F5 没有反应？<span aria-hidden="true">＋</span></summary><p>部分 Mac 键盘需要按 Fn + F5，也可以直接点击编辑器右上角的「运行」按钮。调试对应 F6，断点对应 F9。</p></details></div></section>
     </Container>
   </main>
-
-  <footer class="site-footer"><Container><div class="footer-top"><a class="brand" href="#" aria-label="返回顶部"><img src={`${import.meta.env.BASE_URL}/line.png`} width="34" height="34" alt=""/><span>Line<span class="brand-period">.</span></span></a><p>把复杂留给工具，把热爱留给编程。</p><a href="https://github.com/lec-org/lec-editor">GitHub <span aria-hidden="true">↗</span></a></div><div class="footer-wordmark" aria-hidden="true">Line<span>.</span></div><div class="footer-bottom"><p>Powered by <strong>乐程软件工作室</strong></p><span>Built on <a href="https://zed.dev">Zed</a> · <a href="https://github.com/lec-org/lec-editor/blob/main/LICENSE-GPL">GPL-3.0</a></span><a href="#" aria-label="回到页面顶部">回到顶部 ↑</a></div></Container></footer>
+  <footer class="site-footer"><Container><div class="footer-top"><div class="footer-brand"><a class="brand" href="#" aria-label="返回顶部"><img src={`${import.meta.env.BASE_URL}/line.png`} width="36" height="36" alt=""/><span>Line</span></a><p>让第一行代码，更容易开始。</p></div><nav aria-label="页脚"><div><span>Line</span><a href="#downloads">下载</a><a href="#experience">编辑体验</a><a href="#debugging">基础调试</a></div><div><span>资源</span><a href="https://github.com/lec-org/lec-editor#使用说明">使用说明</a><a href="https://github.com/lec-org/lec-editor/releases">版本发布</a><a href="https://github.com/lec-org/lec-editor/issues">反馈问题</a></div><div><span>开源</span><a href="https://github.com/lec-org/lec-editor">GitHub ↗</a><a href="https://github.com/zed-industries/zed">上游 Zed ↗</a><a href="https://github.com/lec-org/lec-editor/blob/main/LICENSE-GPL">GPL-3.0</a></div></nav></div><div class="footer-bottom"><p>Powered by <strong>乐程软件工作室</strong></p><span>基于 Zed · 为初学者而来</span><a href="#">回到顶部 ↑</a></div></Container></footer>
 </Layout>
-
 <script>
   import '../scripts/site';
 </script>
